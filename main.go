@@ -1,32 +1,35 @@
 package main
 
 import (
+	"context"
 	"time"
 
-	cortex "github.com/loreum-org/cortex/core"
+	"github.com/loreum-org/cortex/core"
 )
 
 func main() {
-	c := cortex.NewCortex()
+	c := core.NewCortex()
 
 	// Create Sensors
-	s1 := cortex.NewSensor("PriceFeed", 2*time.Second)
-	s2 := cortex.NewSensor("WebScraper", 3*time.Second)
+	s1 := core.NewSensor("PriceFeed", 2*time.Second)
+	s2 := core.NewSensor("WebScraper", 3*time.Second)
 	c.Sensors = append(c.Sensors, s1, s2)
 
 	// Create Agents
-	a1 := cortex.NewAgent("TradingBot")
-	a2 := cortex.NewAgent("SentimentAnalyzer")
+	a1 := core.NewAgent("TradingBot")
+	a2 := core.NewAgent("SentimentAnalyzer")
 	c.Agents = append(c.Agents, a1, a2)
+
+	ctx := context.Background()
 
 	// Run Sensors
 	for _, sensor := range c.Sensors {
-		go sensor.Start(c.Ctx)
+		go sensor.Start(ctx)
 	}
 
 	// Subscribe Agents to Sensor Data
 	for _, agent := range c.Agents {
-		go func(agent *cortex.Agent) {
+		go func(agent *core.Agent) {
 			for data := range c.EventBus.Subscribe("sensor-data") {
 				agent.ProcessData(data)
 			}
