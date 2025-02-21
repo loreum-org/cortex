@@ -1,51 +1,76 @@
-# Loreum Cortex
+# 🌐 **Loreum: A Decentralized Intelligence Network**
 
-## Tech Stack & Core Components
+## **Overview**
 
-1. Peer-to-Peer Network with libp2p
-- Built in Golang, leveraging libp2p for peer discovery, secure communication, and decentralized networking.
-- Nodes operate independently but maintain a shared ledger of reputations and specializations.
-- Gossip-based protocol to sync state and optimize query routing.
+**Loreum** is a decentralized, AI-driven network designed for **distributed inference, agent collaboration, and real-time decision-making**. By integrating **DAG-based Asynchronous Byzantine Fault Tolerance (aBFT)**, **Retrieval-Augmented Generation (RAG)**, and a **peer-to-peer reputation mechanism**, Loreum enables **scalable, trustless AI processing** across an autonomous ecosystem.
 
-2. Distributed Retrieval-Augmented Generation (RAG) System
-- Every node hosts a local vector-embedded database to process queries efficiently.
-- Queries are routed through specialized nodes based on reputation scores and data proximity.
-- EigenDA for storage, ensuring scalability and decentralized data access.
+---
 
-3. Modular Sensor & Agent Hub
-- Sensors collect real-time and fetch-based data, providing context for decision-making.
-- Agents process and act on the data, enabling autonomous workflows across nodes.
-- Pluggable design allows developers to add custom sensors and agents.
+## **📌 Key Features**
 
-4. Blockchain as a Global Index
-- Layer 2 Rollup to maintain a global registry of nodes and their capabilities.
-- Token-based staking ($LORE) to incentivize reliability and accuracy.
-- Nodes with high reputation scores get prioritized in query execution.
+✅ **DAG-Based aBFT Consensus** – High-throughput, leaderless finality for trustless computations.  
+✅ **Peer-to-Peer Network** – Nodes communicate using **libp2p**, ensuring censorship resistance.  
+✅ **Retrieval-Augmented Generation (RAG)** – Enables **context-aware decision-making** with real-time data.  
+✅ **Agent-Driven Execution** – Modular agents perform **AI reasoning, governance, and data processing**.  
+✅ **Decentralized Reputation System** – Secure, **stake-weighted incentives** prevent Sybil attacks.  
+✅ **Loreum Cortex** – The brain of the network, integrating agents, queries, and transactions.  
+✅ **Tokenized Economy** – Uses the **$LORE token** for staking, query monetization, and governance.  
 
-5. Heterogeneous Inference Network
-- Inspired by research on multi-model inference, nodes dynamically choose which LLMs to use based on the query complexity.
-- Combines local computation with remote specialized models for efficiency.
-- Built-in model distillation to improve response times for repeated queries.
+---
 
-## Hacky & Notable Innovations
+## **📜 Architecture Overview**
 
-🛠 P2P Query Routing with Reputation-Based Load Balancing
-- Instead of a single AI model handling all queries, we distribute them based on node expertise.
-- Nodes compete for queries but must stake $LORE to participate, reducing spam.
-- Dynamic weights adjust reputation scores based on query difficulty and response quality.
+Loreum consists of **three core layers** that work together to create a **secure, modular, and intelligent decentralized network**.
 
-🚀 Agent & Sensor Marketplace
-- Nodes are extended with AI Agents from other nodes, allowing a marketplace of AI capabilities.
-- Nodes are extended with Data Sensors that are consumed by network Agents
-- Example: A node specialized in financial analysis can import a DeFi trading agent from another node.
+### **1️⃣ The Sensor Hub**
+- Connects to **real-time data sources** (blockchain oracles, APIs, IoT sensors).
+- Converts raw inputs into structured embeddings for **LLM inference**.
+- Provides **historical and real-time context** for decision-making.
 
-### Why This Tech Stack?
-- Golang: Optimized for concurrency, critical for a real-time distributed network.
-- libp2p: Decentralized P2P networking with built-in security.
-- EigenDA: Off-chain storage that scales with demand.
-- Vector DBs: Enables fast contextual search for AI models.
-- Layer 2 Blockchain: Provides verifiable state without high costs.
+### **2️⃣ The Agent Hub**
+- Hosts **autonomous agents** that respond to queries and execute smart contracts.
+- Implements a **distributed RAG system** for **multi-node inference and learning**.
+- Manages **fine-tuned AI models** and decentralized applications (dApps).
 
-### Key Partner Technologies & Benefits
-- EigenLayer: Secure and decentralized data availability for RAG queries.
-- libp2p: Handles peer discovery & networking, reducing centralization.
+### **3️⃣ The Loreum Cortex (Computation Layer)**
+- Implements **DAG-based aBFT consensus** for **high-speed inference validation**.
+- Uses **libp2p P2P networking** to propagate **queries and responses**.
+- Integrates a **local vector database** for knowledge retrieval.
+- **Finalizes computations** using reputation-based decision aggregation.
+
+---
+
+## **🛠️ How It Works**
+
+1. **Query Routing**: A user submits a question or task, which is **distributed across the network**.  
+2. **Node Specialization**: The request is **matched to nodes** with relevant **sensors & agents**.  
+3. **Consensus Mechanism**: Nodes run **DAG-aBFT** to agree on results **without a leader**.  
+4. **Finalized Response**: The best-ranked nodes produce a **verified, reputation-weighted answer**.  
+5. **Economic Incentives**: Nodes earn **$LORE rewards** based on **accuracy, speed, and trust score**.  
+
+---
+
+## **🛠️ Technology Stack**
+
+- **Programming Language**: Golang  
+- **Networking**: libp2p (P2P), gRPC  
+- **Consensus**: DAG-based aBFT (inspired by **Aleph Zero, Avalanche, HoneyBadgerBFT**)  
+- **Vector Search**: FAISS, EigenDA for distributed retrieval  
+- **Cryptography**: Ed25519 signatures, Zero-Knowledge Proofs (ZKPs), post-quantum integration (Dilithium)  
+- **Smart Contracts**: EVM-based execution (Ethereum L2 rollup compatibility)  
+- **Data Storage**: Local vector DB + IPFS integration for persistence  
+
+---
+
+## **📖 Get Involved**
+
+👨‍💻 **Developers**: Contribute to Loreum’s open-source codebase! [GitHub Repo](https://github.com/loreum-org/cortex)  
+🌎 **Community**: Join the community [Twitter](https://x.com/loreumdao).  
+💡 **Researchers**: Explore AI-driven decentralized inference with us!  
+
+**Loreum is building the future of decentralized AI. Be part of it.** 🚀  
+
+---
+
+## **🔗 Links**
+- [Technical Documentation](https://docs.loreum.org)
