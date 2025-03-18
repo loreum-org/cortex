@@ -43,6 +43,16 @@ The Loreum Cortex node consists of three primary layers:
    ./cortex serve
    ```
 
+## Documentation
+
+Comprehensive documentation for the Loreum Cortex project is available in the [docs](docs/) directory. The documentation covers:
+
+- System architecture and core concepts
+- Network, business, and data layer components
+- Implementation details and API references
+- Development and deployment guides
+- Example use cases and integration examples
+
 ## Development
 
 ### Project Structure
