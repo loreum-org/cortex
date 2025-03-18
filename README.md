@@ -1,76 +1,75 @@
-# 🌐 **Loreum: A Decentralized Intelligence Network**
+# Loreum Cortex
 
-## **Overview**
+Loreum Cortex is a decentralized AI inference network implemented in Go. It provides a robust p2p network that supports the DAG-aBFT consensus mechanism and enables core functions such as Sensor Hub, Agent Hub, and RAG (Retrieval-Augmented Generation) system.
 
-**Loreum** is a decentralized, AI-driven network designed for **distributed inference, agent collaboration, and real-time decision-making**. By integrating **DAG-based Asynchronous Byzantine Fault Tolerance (aBFT)**, **Retrieval-Augmented Generation (RAG)**, and a **peer-to-peer reputation mechanism**, Loreum enables **scalable, trustless AI processing** across an autonomous ecosystem.
+## System Architecture
 
----
+The Loreum Cortex node consists of three primary layers:
 
-## **📌 Key Features**
+1. **Network Layer**: Handles P2P communication, API Gateway, and Consensus mechanism
+2. **Business Layer**: Implements Agent Hub, Sensor Hub, and RAG system
+3. **Data Layer**: Manages data storage with SQL, Redis, and Vector databases
 
-✅ **DAG-Based aBFT Consensus** – High-throughput, leaderless finality for trustless computations.  
-✅ **Peer-to-Peer Network** – Nodes communicate using **libp2p**, ensuring censorship resistance.  
-✅ **Retrieval-Augmented Generation (RAG)** – Enables **context-aware decision-making** with real-time data.  
-✅ **Agent-Driven Execution** – Modular agents perform **AI reasoning, governance, and data processing**.  
-✅ **Decentralized Reputation System** – Secure, **stake-weighted incentives** prevent Sybil attacks.  
-✅ **Loreum Cortex** – The brain of the network, integrating agents, queries, and transactions.  
-✅ **Tokenized Economy** – Uses the **$LORE token** for staking, query monetization, and governance.  
+## Getting Started
 
----
+### Prerequisites
 
-## **📜 Architecture Overview**
+- Go 1.20 or higher
+- Docker and Docker Compose
+- PostgreSQL 14+
+- Redis 7+
+- Vector database (Milvus/Qdrant/Weaviate)
 
-Loreum consists of **three core layers** that work together to create a **secure, modular, and intelligent decentralized network**.
+### Installation
 
-### **1️⃣ The Sensor Hub**
-- Connects to **real-time data sources** (blockchain oracles, APIs, IoT sensors).
-- Converts raw inputs into structured embeddings for **LLM inference**.
-- Provides **historical and real-time context** for decision-making.
+1. Clone the repository:
+   ```
+   git clone https://github.com/loreum-org/cortex.git
+   cd cortex
+   ```
 
-### **2️⃣ The Agent Hub**
-- Hosts **autonomous agents** that respond to queries and execute smart contracts.
-- Implements a **distributed RAG system** for **multi-node inference and learning**.
-- Manages **fine-tuned AI models** and decentralized applications (dApps).
+2. Install dependencies:
+   ```
+   go mod tidy
+   ```
 
-### **3️⃣ The Loreum Cortex (Computation Layer)**
-- Implements **DAG-based aBFT consensus** for **high-speed inference validation**.
-- Uses **libp2p P2P networking** to propagate **queries and responses**.
-- Integrates a **local vector database** for knowledge retrieval.
-- **Finalizes computations** using reputation-based decision aggregation.
+3. Build the project:
+   ```
+   go build -o cortex ./cmd/cortexd
+   ```
 
----
+4. Run the node:
+   ```
+   ./cortex serve
+   ```
 
-## **🛠️ How It Works**
+## Development
 
-1. **Query Routing**: A user submits a question or task, which is **distributed across the network**.  
-2. **Node Specialization**: The request is **matched to nodes** with relevant **sensors & agents**.  
-3. **Consensus Mechanism**: Nodes run **DAG-aBFT** to agree on results **without a leader**.  
-4. **Finalized Response**: The best-ranked nodes produce a **verified, reputation-weighted answer**.  
-5. **Economic Incentives**: Nodes earn **$LORE rewards** based on **accuracy, speed, and trust score**.  
+### Project Structure
 
----
+```
+cortex/
+├── cmd/
+│   └── cortexd/               # Main executable
+├── internal/
+│   ├── api/                   # API Gateway
+│   ├── consensus/             # DAG-aBFT implementation
+│   ├── p2p/                   # P2P networking
+│   ├── agenthub/              # Agent implementations
+│   ├── sensorhub/             # Sensor implementations
+│   ├── rag/                   # RAG system
+│   ├── storage/               # Data storage
+│   └── reputation/            # Reputation system
+├── pkg/
+│   ├── types/                 # Shared data types
+│   ├── crypto/                # Cryptographic utilities
+│   ├── config/                # Configuration management
+│   └── util/                  # Shared utilities
+├── test/                      # Test suites
+├── scripts/                   # Deployment scripts
+└── docs/                      # Documentation
+```
 
-## **🛠️ Technology Stack**
+## License
 
-- **Programming Language**: Golang  
-- **Networking**: libp2p (P2P), gRPC  
-- **Consensus**: DAG-based aBFT (inspired by **Aleph Zero, Avalanche, HoneyBadgerBFT**)  
-- **Vector Search**: FAISS, EigenDA for distributed retrieval  
-- **Cryptography**: Ed25519 signatures, Zero-Knowledge Proofs (ZKPs), post-quantum integration (Dilithium)  
-- **Smart Contracts**: EVM-based execution (Ethereum L2 rollup compatibility)  
-- **Data Storage**: Local vector DB + IPFS integration for persistence  
-
----
-
-## **📖 Get Involved**
-
-👨‍💻 **Developers**: Contribute to Loreum’s open-source codebase! [GitHub Repo](https://github.com/loreum-org/cortex)  
-🌎 **Community**: Join the community [Twitter](https://x.com/loreumdao).  
-💡 **Researchers**: Explore AI-driven decentralized inference with us!  
-
-**Loreum is building the future of decentralized AI. Be part of it.** 🚀  
-
----
-
-## **🔗 Links**
-- [Technical Documentation](https://docs.loreum.org)
+[MIT License](LICENSE) 
