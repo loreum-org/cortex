@@ -6,8 +6,10 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/loreum-org/cortex/internal/agenthub"
 	"github.com/loreum-org/cortex/internal/api"
 	"github.com/loreum-org/cortex/internal/consensus"
+	"github.com/loreum-org/cortex/internal/economy"
 	"github.com/loreum-org/cortex/internal/p2p"
 	"github.com/loreum-org/cortex/internal/rag"
 	"github.com/loreum-org/cortex/pkg/types"
@@ -32,9 +35,33 @@ func main() {
 		Use:   "serve",
 		Short: "Start the Cortex node",
 		Run: func(cmd *cobra.Command, args []string) {
-			startNode()
+			port, _ := cmd.Flags().GetInt("port")
+			p2pPort, _ := cmd.Flags().GetInt("p2p-port")
+			bootstrapPeers, _ := cmd.Flags().GetString("bootstrap-peers")
+			nodeName, _ := cmd.Flags().GetString("node-name")
+
+			// Generate a node name if not provided
+			if nodeName == "" {
+				randomBytes := make([]byte, 4)
+				rand.Read(randomBytes)
+				nodeName = fmt.Sprintf("cortex-node-%x", randomBytes)
+			}
+
+			// Parse bootstrap peers
+			var bootstrapPeerList []string
+			if bootstrapPeers != "" {
+				bootstrapPeerList = strings.Split(bootstrapPeers, ",")
+			}
+
+			startNode(port, p2pPort, bootstrapPeerList, nodeName)
 		},
 	}
+
+	// Add flags to serve command
+	serveCmd.Flags().Int("port", 8080, "API server port to listen on")
+	serveCmd.Flags().Int("p2p-port", 4001, "P2P network port to listen on")
+	serveCmd.Flags().String("bootstrap-peers", "", "Comma-separated list of bootstrap peer addresses")
+	serveCmd.Flags().String("node-name", "", "Node name for identification (default: auto-generated)")
 
 	var testCmd = &cobra.Command{
 		Use:   "test",
@@ -53,7 +80,17 @@ func main() {
 	}
 }
 
-func startNode() {
+// generateListenAddresses generates listen addresses for the P2P node based on the provided port
+func generateListenAddresses(p2pPort int) []string {
+	return []string{
+		fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", p2pPort),
+		fmt.Sprintf("/ip4/0.0.0.0/udp/%d/quic-v1", p2pPort),
+		fmt.Sprintf("/ip6/::/tcp/%d", p2pPort),
+		fmt.Sprintf("/ip6/::/udp/%d/quic-v1", p2pPort),
+	}
+}
+
+func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 	// Create a context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -67,6 +104,16 @@ func startNode() {
 	// Create network configuration
 	netConfig := types.NewNetworkConfig()
 	netConfig.PrivateKey = priv
+	netConfig.ListenAddresses = generateListenAddresses(p2pPort)
+	netConfig.BootstrapPeers = bootstrapPeers
+
+	// Log node information
+	log.Printf("Starting Cortex node: %s", nodeName)
+	log.Printf("P2P port: %d", p2pPort)
+	log.Printf("API port: %d", port)
+	if len(bootstrapPeers) > 0 {
+		log.Printf("Bootstrap peers: %s", strings.Join(bootstrapPeers, ", "))
+	}
 
 	// Create a P2P node
 	node, err := p2p.NewP2PNode(netConfig)
@@ -104,22 +151,79 @@ func startNode() {
 			Temperature:  0.7,
 			CacheResults: true,
 		},
-		DefaultModel: "default",
+		// DefaultModel will be auto-selected by SolverAgent
 	}
 	solverAgent := agenthub.NewSolverAgent(solverConfig)
 
 	// Create a RAG system
 	ragSystem := rag.NewRAGSystem(384) // 384 dimensions for the vector space
 
+	// Initialize the Economic Engine
+	economicEngine := economy.NewEconomicEngine()
+	log.Println("Economic Engine initialized.")
+
+	// Start the Economic Engine maintenance tasks in a goroutine
+	go economicEngine.RunMaintenanceTasks(ctx)
+	log.Println("Economic Engine maintenance tasks started.")
+
+	// Create some default user and node accounts for demo purposes
+	defaultUserID := "user-1"
+	defaultUserAddress := "0xUser1Address"
+	userAccount, err := economicEngine.CreateUserAccount(defaultUserID, defaultUserAddress)
+	if err != nil {
+		log.Printf("Warning: Failed to create default user account: %v", err)
+	} else {
+		log.Printf("Default user account created: %s with address %s", userAccount.ID, userAccount.Address)
+	}
+
+	defaultNodeID := "node-1"
+	defaultNodeAddress := "0xNode1Address"
+	nodeAccount, err := economicEngine.CreateNodeAccount(defaultNodeID, defaultNodeAddress)
+	if err != nil {
+		log.Printf("Warning: Failed to create default node account: %v", err)
+	} else {
+		log.Printf("Default node account created: %s with address %s", nodeAccount.ID, nodeAccount.Address)
+	}
+
+	// Fund the default user account for testing
+	if userAccount != nil {
+		// Transfer tokens from network account to user account
+		amount := new(big.Int).Mul(big.NewInt(1000), economy.TokenUnit) // 1000 tokens
+		tx, err := economicEngine.Transfer("network", defaultUserID, amount, "Initial funding for testing")
+		if err != nil {
+			log.Printf("Warning: Failed to fund default user account: %v", err)
+		} else {
+			log.Printf("Transferred %s tokens to user account %s (Transaction ID: %s)", amount.String(), defaultUserID, tx.ID)
+		}
+	}
+
 	// Create an API server
-	server := api.NewServer(node, cs, solverAgent, ragSystem)
+	server := api.NewServer(node, cs, solverAgent, ragSystem, economicEngine)
 
 	// Start the API server
 	go func() {
-		if err := server.Start(":8080"); err != nil {
+		address := fmt.Sprintf(":%d", port)
+		if err := server.Start(address); err != nil {
 			log.Fatal(err)
 		}
 	}()
+
+	log.Printf("Cortex node started and listening on port %d\n", port)
+
+	// Wait for peers if bootstrap peers are provided
+	if len(bootstrapPeers) > 0 {
+		// Set a timeout for peer discovery
+		peerCtx, peerCancel := context.WithTimeout(ctx, 30*time.Second)
+		defer peerCancel()
+
+		log.Println("Waiting for peer connections...")
+		err := node.WaitForPeers(peerCtx, 1)
+		if err != nil {
+			log.Printf("Warning: Peer discovery timed out: %s", err)
+		} else {
+			log.Println("Successfully connected to peers!")
+		}
+	}
 
 	// Wait for interrupt signal
 	sigCh := make(chan os.Signal, 1)

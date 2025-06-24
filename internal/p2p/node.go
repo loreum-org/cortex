@@ -2,17 +2,68 @@ package p2p
 
 import (
 	"context"
+	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 	"github.com/loreum-org/cortex/pkg/types"
 )
+
+// Topic names for the Cortex network
+const (
+	TopicQueries = "cortex/queries"
+	TopicEvents  = "cortex/events"
+	TopicResults = "cortex/results"
+	TopicStatus  = "cortex/status"
+)
+
+// MessageType defines the type of message being sent
+type MessageType string
+
+const (
+	MessageTypeQuery  MessageType = "query"
+	MessageTypeResult MessageType = "result"
+	MessageTypeEvent  MessageType = "event"
+	MessageTypeStatus MessageType = "status"
+)
+
+// NetworkMessage represents a message sent over the P2P network
+type NetworkMessage struct {
+	Type      MessageType       `json:"type"`
+	SenderID  string            `json:"sender_id"`
+	Timestamp int64             `json:"timestamp"`
+	Payload   map[string]any    `json:"payload"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
+}
+
+// QueryBroadcast represents a query broadcast message
+type QueryBroadcast struct {
+	QueryID   string            `json:"query_id"`
+	Text      string            `json:"text"`
+	Type      string            `json:"type"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
+	Timestamp int64             `json:"timestamp"`
+}
+
+// NetworkStats tracks statistics about the P2P network
+type NetworkStats struct {
+	ConnectedPeers      int       `json:"connected_peers"`
+	TotalBytesReceived  int64     `json:"total_bytes_received"`
+	TotalBytesSent      int64     `json:"total_bytes_sent"`
+	ConnectionsOpened   int64     `json:"connections_opened"`
+	ConnectionsClosed   int64     `json:"connections_closed"`
+	LastMessageReceived time.Time `json:"last_message_received"`
+	LastMessageSent     time.Time `json:"last_message_sent"`
+	StartTime           time.Time `json:"start_time"`
+}
 
 // P2PNode represents a P2P network node
 type P2PNode struct {
@@ -22,7 +73,21 @@ type P2PNode struct {
 	Topics        map[string]*pubsub.Topic
 	Subscriptions map[string]*pubsub.Subscription
 	Config        *types.NetworkConfig
+
+	// Message handling
+	MessageHandlers map[MessageType][]MessageHandler
+
+	// Network statistics
+	stats      NetworkStats
+	statsMutex sync.RWMutex
+
+	// Context for the node
+	ctx    context.Context
+	cancel context.CancelFunc
 }
+
+// MessageHandler is a function that handles a specific type of message
+type MessageHandler func(msg *NetworkMessage) error
 
 // discoveryNotifee gets notified when we find a new peer via mDNS discovery
 type discoveryNotifee struct {
@@ -42,6 +107,9 @@ func (n *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 
 // NewP2PNode creates a new P2P node with the given configuration
 func NewP2PNode(cfg *types.NetworkConfig) (*P2PNode, error) {
+	// Create a new context
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// Create a new libp2p Host
 	h, err := libp2p.New(
 		libp2p.ListenAddrStrings(cfg.ListenAddresses...),
@@ -49,30 +117,49 @@ func NewP2PNode(cfg *types.NetworkConfig) (*P2PNode, error) {
 		libp2p.NATPortMap(),
 	)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 
 	// Create a new DHT for peer discovery
-	kdht, err := dht.New(context.Background(), h)
+	kdht, err := dht.New(ctx, h)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 
 	// Create a new PubSub service using the GossipSub router
-	ps, err := pubsub.NewGossipSub(context.Background(), h)
+	ps, err := pubsub.NewGossipSub(ctx, h)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 
 	// Create a new PubSub service using the GossipSub router
 	node := &P2PNode{
-		Host:          h,
-		DHT:           kdht,
-		PubSub:        ps,
-		Topics:        make(map[string]*pubsub.Topic),
-		Subscriptions: make(map[string]*pubsub.Subscription),
-		Config:        cfg,
+		Host:            h,
+		DHT:             kdht,
+		PubSub:          ps,
+		Topics:          make(map[string]*pubsub.Topic),
+		Subscriptions:   make(map[string]*pubsub.Subscription),
+		Config:          cfg,
+		MessageHandlers: make(map[MessageType][]MessageHandler),
+		stats: NetworkStats{
+			StartTime: time.Now(),
+		},
+		ctx:    ctx,
+		cancel: cancel,
 	}
+
+	// Set up connection event handlers
+	h.Network().Notify(&network.NotifyBundle{
+		ConnectedF: func(n network.Network, c network.Conn) {
+			node.onPeerConnected(c.RemotePeer())
+		},
+		DisconnectedF: func(n network.Network, c network.Conn) {
+			node.onPeerDisconnected(c.RemotePeer())
+		},
+	})
 
 	log.Printf("Host created. We are: %s\n", h.ID().String())
 	log.Printf("Listening on: %s\n", h.Addrs())
@@ -103,6 +190,19 @@ func (n *P2PNode) Start(ctx context.Context) error {
 	// Setup local mDNS discovery
 	if err := setupDiscovery(n.Host); err != nil {
 		return err
+	}
+
+	// Join standard topics
+	standardTopics := []string{TopicQueries, TopicEvents, TopicResults, TopicStatus}
+	for _, topicName := range standardTopics {
+		_, err := n.JoinTopic(topicName)
+		if err != nil {
+			log.Printf("Error joining topic %s: %s\n", topicName, err)
+			continue
+		}
+
+		// Start handling messages from this topic
+		go n.handleTopicMessages(topicName)
 	}
 
 	return nil
@@ -144,11 +244,181 @@ func (n *P2PNode) Publish(topicName string, data []byte) error {
 		n.Topics[topicName] = topic
 	}
 
-	return topic.Publish(context.Background(), data)
+	err := topic.Publish(n.ctx, data)
+	if err == nil {
+		n.statsMutex.Lock()
+		n.stats.TotalBytesSent += int64(len(data))
+		n.stats.LastMessageSent = time.Now()
+		n.statsMutex.Unlock()
+	}
+	return err
+}
+
+// BroadcastQuery broadcasts a query to the network
+func (n *P2PNode) BroadcastQuery(query *types.Query) error {
+	// Create a query broadcast message
+	queryBroadcast := QueryBroadcast{
+		QueryID:   query.ID,
+		Text:      query.Text,
+		Type:      query.Type,
+		Metadata:  query.Metadata,
+		Timestamp: query.Timestamp,
+	}
+
+	// Create a network message
+	msg := NetworkMessage{
+		Type:      MessageTypeQuery,
+		SenderID:  n.Host.ID().String(),
+		Timestamp: time.Now().Unix(),
+		Payload:   map[string]any{"query": queryBroadcast},
+	}
+
+	// Marshal the message to JSON
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	// Publish the message to the queries topic
+	return n.Publish(TopicQueries, data)
+}
+
+// BroadcastEvent broadcasts an event to the network
+func (n *P2PNode) BroadcastEvent(eventType string, data map[string]any) error {
+	// Create a network message
+	msg := NetworkMessage{
+		Type:      MessageTypeEvent,
+		SenderID:  n.Host.ID().String(),
+		Timestamp: time.Now().Unix(),
+		Payload:   map[string]any{"event_type": eventType, "data": data},
+	}
+
+	// Marshal the message to JSON
+	jsonData, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	// Publish the message to the events topic
+	return n.Publish(TopicEvents, jsonData)
+}
+
+// RegisterMessageHandler registers a handler for a specific message type
+func (n *P2PNode) RegisterMessageHandler(msgType MessageType, handler MessageHandler) {
+	n.MessageHandlers[msgType] = append(n.MessageHandlers[msgType], handler)
+}
+
+// handleTopicMessages handles messages from a specific topic
+func (n *P2PNode) handleTopicMessages(topicName string) {
+	sub, exists := n.Subscriptions[topicName]
+	if !exists {
+		log.Printf("No subscription for topic %s\n", topicName)
+		return
+	}
+
+	for {
+		msg, err := sub.Next(n.ctx)
+		if err != nil {
+			// Context canceled or subscription closed
+			if err == context.Canceled || err == context.DeadlineExceeded {
+				return
+			}
+			log.Printf("Error receiving message from topic %s: %s\n", topicName, err)
+			continue
+		}
+
+		// Skip messages from ourselves
+		if msg.ReceivedFrom == n.Host.ID() {
+			continue
+		}
+
+		// Update statistics
+		n.statsMutex.Lock()
+		n.stats.TotalBytesReceived += int64(len(msg.Data))
+		n.stats.LastMessageReceived = time.Now()
+		n.statsMutex.Unlock()
+
+		// Process the message
+		go n.HandleNetworkMessage(msg.Data)
+	}
+}
+
+// HandleNetworkMessage processes an incoming network message
+func (n *P2PNode) HandleNetworkMessage(data []byte) error {
+	// Unmarshal the message
+	var msg NetworkMessage
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return err
+	}
+
+	// Call the appropriate handlers
+	handlers, exists := n.MessageHandlers[msg.Type]
+	if !exists {
+		// No handlers for this message type
+		return nil
+	}
+
+	// Call all registered handlers
+	for _, handler := range handlers {
+		if err := handler(&msg); err != nil {
+			log.Printf("Error handling message of type %s: %s\n", msg.Type, err)
+		}
+	}
+
+	return nil
+}
+
+// onPeerConnected is called when a peer connects
+func (n *P2PNode) onPeerConnected(p peer.ID) {
+	n.statsMutex.Lock()
+	n.stats.ConnectionsOpened++
+	n.stats.ConnectedPeers = len(n.Host.Network().Peers())
+	n.statsMutex.Unlock()
+
+	log.Printf("Peer connected: %s (total: %d)\n", p.String(), n.stats.ConnectedPeers)
+
+	// Broadcast a status update
+	go n.BroadcastEvent("peer_connected", map[string]any{
+		"peer_id":     p.String(),
+		"peers_count": n.stats.ConnectedPeers,
+	})
+}
+
+// onPeerDisconnected is called when a peer disconnects
+func (n *P2PNode) onPeerDisconnected(p peer.ID) {
+	n.statsMutex.Lock()
+	n.stats.ConnectionsClosed++
+	n.stats.ConnectedPeers = len(n.Host.Network().Peers())
+	n.statsMutex.Unlock()
+
+	log.Printf("Peer disconnected: %s (total: %d)\n", p.String(), n.stats.ConnectedPeers)
+
+	// Broadcast a status update
+	go n.BroadcastEvent("peer_disconnected", map[string]any{
+		"peer_id":     p.String(),
+		"peers_count": n.stats.ConnectedPeers,
+	})
+}
+
+// GetNetworkStats returns current network statistics
+func (n *P2PNode) GetNetworkStats() NetworkStats {
+	n.statsMutex.RLock()
+	defer n.statsMutex.RUnlock()
+
+	// Create a copy of the stats
+	stats := n.stats
+
+	// Update the connected peers count (this might have changed)
+	stats.ConnectedPeers = len(n.Host.Network().Peers())
+
+	return stats
 }
 
 // Stop stops the P2P node
 func (n *P2PNode) Stop() error {
+	// Cancel the context
+	n.cancel()
+
 	// Close all subscriptions
 	for _, sub := range n.Subscriptions {
 		sub.Cancel()

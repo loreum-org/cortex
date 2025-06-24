@@ -30,7 +30,7 @@ func (d *DAG) AddNode(txn *Transaction) *DAGNode {
 	d.Nodes[txn.ID] = node
 
 	// Connect the node to its parents
-	for _, parentID := range txn.Parents {
+	for _, parentID := range txn.ParentIDs {
 		if parent, exists := d.Nodes[parentID]; exists {
 			parent.Children = append(parent.Children, node)
 		}
@@ -49,4 +49,18 @@ func (d *DAG) GetNode(id string) (*DAGNode, bool) {
 func (d *DAG) IsFinalized(id string) bool {
 	node, exists := d.Nodes[id]
 	return exists && node.Transaction.Finalized
+}
+
+// Lock locks the DAG for writing
+func (d *DAG) Lock() {
+	// No-op for now, as DAG struct itself doesn't have a dedicated lock.
+	// Locking is typically handled by the service (e.g., ConsensusService) that manages the DAG instance.
+	// In a real implementation where DAG might be accessed by multiple goroutines directly
+	// without an external synchronizing service, this would acquire a lock (e.g., d.mu.Lock()).
+}
+
+// Unlock unlocks the DAG
+func (d *DAG) Unlock() {
+	// No-op for now, corresponding to the Lock method.
+	// In a real implementation, this would release the lock (e.g., d.mu.Unlock()).
 }

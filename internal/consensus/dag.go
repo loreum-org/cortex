@@ -184,6 +184,16 @@ func (tp *TransactionPool) GetTransaction(id string) (*types.Transaction, bool) 
 	return tx, exists
 }
 
+// Lock locks the transaction pool for writing
+func (tp *TransactionPool) Lock() {
+	tp.lock.Lock()
+}
+
+// Unlock unlocks the transaction pool
+func (tp *TransactionPool) Unlock() {
+	tp.lock.Unlock()
+}
+
 // NewReputationManager creates a new reputation manager
 func NewReputationManager() *ReputationManager {
 	return &ReputationManager{
@@ -210,4 +220,14 @@ func (rm *ReputationManager) GetScore(nodeID string) float64 {
 	}
 
 	return score
+}
+
+// Lock locks the reputation manager for writing
+func (rm *ReputationManager) Lock() {
+	rm.lock.Lock()
+}
+
+// Unlock unlocks the reputation manager
+func (rm *ReputationManager) Unlock() {
+	rm.lock.Unlock()
 }

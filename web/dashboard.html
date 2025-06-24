@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loreum Network Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #7e57c2;
+            --accent-secondary: #5e35b1;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+            --info: #2196f3;
+            --border-radius: 8px;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--bg-tertiary);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            color: var(--accent-primary);
+        }
+
+        .refresh-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .last-updated {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-tertiary);
+            transition: var(--transition);
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-primary);
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--accent-primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .card-icon {
+            font-size: 20px;
+            color: var(--accent-primary);
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-good {
+            background-color: var(--success);
+        }
+
+        .status-warning {
+            background-color: var(--warning);
+        }
+
+        .status-error {
+            background-color: var(--error);
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 250px;
+            margin-top: 15px;
+        }
+
+        .network-card {
+            grid-column: span 2;
+        }
+
+        .system-card {
+            grid-column: span 2;
+        }
+
+        .queries-card {
+            grid-column: span 2;
+        }
+
+        .rag-card {
+            grid-column: span 2;
+        }
+
+        .events-card {
+            grid-column: span 4;
+        }
+
+        .event-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .event-item {
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            background-color: var(--bg-tertiary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .event-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-type {
+            font-weight: 500;
+        }
+
+        .event-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .event-data {
+            font-size: 14px;
+        }
+
+        .peer-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .peer-item {
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            background-color: var(--bg-tertiary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .peer-id {
+            font-family: monospace;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .peer-protocols {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+
+        .loading-spinner {
+            border: 4px solid var(--bg-tertiary);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: var(--error);
+            padding: 15px;
+            text-align: center;
+            background-color: rgba(244, 67, 54, 0.1);
+            border-radius: var(--border-radius);
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .network-card, .system-card, .queries-card, .rag-card, .events-card {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .network-card, .system-card, .queries-card, .rag-card, .events-card {
+                grid-column: span 1;
+            }
+            
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-secondary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-brain logo-icon"></i>
+                <h1>Loreum Network Dashboard</h1>
+            </div>
+            <div class="refresh-info">
+                <div class="last-updated">Last updated: <span id="last-updated-time">Just now</span></div>
+                <div class="auto-refresh">
+                    <span>Auto-refresh:</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto-refresh-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <button id="manual-refresh" class="refresh-button">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Network Card -->
+            <div class="card network-card">
+                <div class="card-header">
+                    <h2 class="card-title">Network Status</h2>
+                    <i class="fas fa-network-wired card-icon"></i>
+                </div>
+                <div class="card-content" id="network-content">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Card -->
+            <div class="card system-card">
+                <div class="card-header">
+                    <h2 class="card-title">System Health</h2>
+                    <i class="fas fa-server card-icon"></i>
+                </div>
+                <div class="card-content" id="system-content">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Queries Card -->
+            <div class="card queries-card">
+                <div class="card-header">
+                    <h2 class="card-title">Query Processing</h2>
+                    <i class="fas fa-search card-icon"></i>
+                </div>
+                <div class="card-content" id="queries-content">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="queries-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RAG Card -->
+            <div class="card rag-card">
+                <div class="card-header">
+                    <h2 class="card-title">RAG System</h2>
+                    <i class="fas fa-database card-icon"></i>
+                </div>
+                <div class="card-content" id="rag-content">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="rag-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Card -->
+            <div class="card events-card">
+                <div class="card-header">
+                    <h2 class="card-title">Event Log</h2>
+                    <i class="fas fa-history card-icon"></i>
+                </div>
+                <div class="card-content">
+                    <div id="events-content" class="event-list">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8080';
+        const REFRESH_INTERVAL = 5000; // 5 seconds
+        let autoRefreshEnabled = true;
+        let refreshInterval;
+        let queriesChart = null;
+        let ragChart = null;
+        
+        // Charts data
+        const queriesChartData = {
+            labels: [],
+            successData: [],
+            failureData: []
+        };
+        
+        const ragChartData = {
+            labels: [],
+            queriesData: [],
+            documentsData: []
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup auto-refresh toggle
+            const autoRefreshToggle = document.getElementById('auto-refresh-toggle');
+            autoRefreshToggle.addEventListener('change', (e) => {
+                autoRefreshEnabled = e.target.checked;
+                if (autoRefreshEnabled) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+
+            // Setup manual refresh button
+            const manualRefreshBtn = document.getElementById('manual-refresh');
+            manualRefreshBtn.addEventListener('click', () => {
+                refreshAllData();
+                updateLastUpdatedTime();
+            });
+
+            // Initialize charts
+            initializeCharts();
+
+            // Initial data load
+            refreshAllData();
+            updateLastUpdatedTime();
+
+            // Start auto-refresh
+            startAutoRefresh();
+        });
+
+        function startAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                refreshAllData();
+                updateLastUpdatedTime();
+            }, REFRESH_INTERVAL);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+        }
+
+        function updateLastUpdatedTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('last-updated-time').textContent = timeString;
+        }
+
+        function initializeCharts() {
+            // Initialize Queries Chart
+            const queriesCtx = document.getElementById('queries-chart').getContext('2d');
+            queriesChart = new Chart(queriesCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Successful Queries',
+                            data: [],
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Failed Queries',
+                            data: [],
+                            borderColor: '#f44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#a0a0a0'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#a0a0a0'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Initialize RAG Chart
+            const ragCtx = document.getElementById('rag-chart').getContext('2d');
+            ragChart = new Chart(ragCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'RAG Queries',
+                            data: [],
+                            borderColor: '#2196f3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Documents',
+                            data: [],
+                            borderColor: '#ff9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#a0a0a0'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Queries',
+                                color: '#2196f3'
+                            },
+                            ticks: {
+                                color: '#a0a0a0'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Documents',
+                                color: '#ff9800'
+                            },
+                            ticks: {
+                                color: '#a0a0a0'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function refreshAllData() {
+            fetchNetworkMetrics();
+            fetchSystemMetrics();
+            fetchQueryMetrics();
+            fetchRAGMetrics();
+            fetchEvents();
+        }
+
+        function updateChartData() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            // Update Queries Chart
+            queriesChartData.labels.push(timeString);
+            if (queriesChartData.labels.length > 10) {
+                queriesChartData.labels.shift();
+                queriesChartData.successData.shift();
+                queriesChartData.failureData.shift();
+            }
+            
+            queriesChart.data.labels = queriesChartData.labels;
+            queriesChart.data.datasets[0].data = queriesChartData.successData;
+            queriesChart.data.datasets[1].data = queriesChartData.failureData;
+            queriesChart.update();
+            
+            // Update RAG Chart
+            ragChartData.labels.push(timeString);
+            if (ragChartData.labels.length > 10) {
+                ragChartData.labels.shift();
+                ragChartData.queriesData.shift();
+                ragChartData.documentsData.shift();
+            }
+            
+            ragChart.data.labels = ragChartData.labels;
+            ragChart.data.datasets[0].data = ragChartData.queriesData;
+            ragChart.data.datasets[1].data = ragChartData.documentsData;
+            ragChart.update();
+        }
+
+        async function fetchNetworkMetrics() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/metrics/network`);
+                if (!response.ok) throw new Error('Network metrics fetch failed');
+                
+                const data = await response.json();
+                const peerCount = data.peer_count || 0;
+                const bytesReceived = formatBytes(data.bytes_received || 0);
+                const bytesSent = formatBytes(data.bytes_sent || 0);
+                const connectionsOpened = data.connections_opened || 0;
+                const connectionsClosed = data.connections_closed || 0;
+                
+                // Get peer list
+                const peersResponse = await fetch(`${API_BASE_URL}/node/peers`);
+                if (!peersResponse.ok) throw new Error('Peers fetch failed');
+                const peers = await peersResponse.json();
+                
+                // Update the network card
+                const networkContent = document.getElementById('network-content');
+                networkContent.innerHTML = `
+                    <div class="metric-grid">
+                        <div class="metric">
+                            <div class="metric-label">Peer Count</div>
+                            <div class="metric-value">
+                                <span class="status-indicator ${peerCount > 0 ? 'status-good' : 'status-warning'}"></span>
+                                ${peerCount}
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Connections</div>
+                            <div class="metric-value">${connectionsOpened - connectionsClosed}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Data Received</div>
+                            <div class="metric-value">${bytesReceived}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Data Sent</div>
+                            <div class="metric-value">${bytesSent}</div>
+                        </div>
+                    </div>
+                    <h3 style="margin-top: 20px; margin-bottom: 10px;">Connected Peers</h3>
+                    <div class="peer-list">
+                        ${peers.length > 0 
+                            ? peers.map(peer => `
+                                <div class="peer-item">
+                                    <div class="peer-info">
+                                        <div class="peer-id">${peer.id}</div>
+                                        <div class="peer-protocols">${(peer.protocols || []).join(', ')}</div>
+                                    </div>
+                                </div>
+                            `).join('')
+                            : '<div class="peer-item">No peers connected</div>'
+                        }
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching network metrics:', error);
+                document.getElementById('network-content').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Failed to load network metrics: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchSystemMetrics() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/metrics/system`);
+                if (!response.ok) throw new Error('System metrics fetch failed');
+                
+                const data = await response.json();
+                const uptime = formatTime(data.uptime_seconds || 0);
+                const goroutines = data.goroutines || 0;
+                const memoryAllocated = formatBytes(data.memory_allocated || 0);
+                const memoryTotal = formatBytes(data.memory_total || 0);
+                const memorySys = formatBytes(data.memory_sys || 0);
+                const gcCycles = data.gc_cycles || 0;
+                const cpuCores = data.cpu_cores || 0;
+                
+                // Calculate memory usage percentage
+                const memoryUsagePercent = data.memory_sys > 0 
+                    ? Math.round((data.memory_allocated / data.memory_sys) * 100) 
+                    : 0;
+                
+                // Determine status color based on memory usage
+                let memoryStatusClass = 'status-good';
+                if (memoryUsagePercent > 80) {
+                    memoryStatusClass = 'status-error';
+                } else if (memoryUsagePercent > 60) {
+                    memoryStatusClass = 'status-warning';
+                }
+                
+                // Update the system card
+                const systemContent = document.getElementById('system-content');
+                systemContent.innerHTML = `
+                    <div class="metric-grid">
+                        <div class="metric">
+                            <div class="metric-label">Uptime</div>
+                            <div class="metric-value">${uptime}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">CPU Cores</div>
+                            <div class="metric-value">${cpuCores}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Memory Usage</div>
+                            <div class="metric-value">
+                                <span class="status-indicator ${memoryStatusClass}"></span>
+                                ${memoryUsagePercent}%
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Memory Allocated</div>
+                            <div class="metric-value">${memoryAllocated}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Goroutines</div>
+                            <div class="metric-value">${goroutines}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">GC Cycles</div>
+                            <div class="metric-value">${gcCycles}</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching system metrics:', error);
+                document.getElementById('system-content').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Failed to load system metrics: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchQueryMetrics() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/metrics/queries`);
+                if (!response.ok) throw new Error('Query metrics fetch failed');
+                
+                const data = await response.json();
+                const queriesProcessed = data.queries_processed || 0;
+                const querySuccesses = data.query_successes || 0;
+                const queryFailures = data.query_failures || 0;
+                const avgLatency = data.avg_latency_ms || 0;
+                const successRate = data.success_rate || 0;
+                
+                // Determine status color based on success rate
+                let successRateStatusClass = 'status-good';
+                if (successRate < 70) {
+                    successRateStatusClass = 'status-error';
+                } else if (successRate < 90) {
+                    successRateStatusClass = 'status-warning';
+                }
+                
+                // Determine status color based on latency
+                let latencyStatusClass = 'status-good';
+                if (avgLatency > 1000) {
+                    latencyStatusClass = 'status-error';
+                } else if (avgLatency > 500) {
+                    latencyStatusClass = 'status-warning';
+                }
+                
+                // Update the queries card
+                const queriesContent = document.getElementById('queries-content');
+                const chartContainer = queriesContent.querySelector('.chart-container');
+                queriesContent.innerHTML = `
+                    <div class="metric-grid">
+                        <div class="metric">
+                            <div class="metric-label">Queries Processed</div>
+                            <div class="metric-value">${queriesProcessed}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Success Rate</div>
+                            <div class="metric-value">
+                                <span class="status-indicator ${successRateStatusClass}"></span>
+                                ${successRate.toFixed(1)}%
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Avg. Latency</div>
+                            <div class="metric-value">
+                                <span class="status-indicator ${latencyStatusClass}"></span>
+                                ${avgLatency.toFixed(0)} ms
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Failed Queries</div>
+                            <div class="metric-value">${queryFailures}</div>
+                        </div>
+                    </div>
+                `;
+                queriesContent.appendChild(chartContainer);
+                
+                // Update chart data
+                queriesChartData.successData.push(querySuccesses);
+                queriesChartData.failureData.push(queryFailures);
+                updateChartData();
+                
+            } catch (error) {
+                console.error('Error fetching query metrics:', error);
+                document.getElementById('queries-content').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Failed to load query metrics: ${error.message}
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="queries-chart"></canvas>
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchRAGMetrics() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/metrics/rag`);
+                if (!response.ok) throw new Error('RAG metrics fetch failed');
+                
+                const data = await response.json();
+                const documentCount = data.document_count || 0;
+                const documentsAdded = data.documents_added || 0;
+                const ragQueriesTotal = data.rag_queries_total || 0;
+                const ragQueryFailures = data.rag_query_failures || 0;
+                const avgLatency = data.avg_latency_ms || 0;
+                
+                // Calculate success rate
+                const ragSuccessRate = ragQueriesTotal > 0 
+                    ? ((ragQueriesTotal - ragQueryFailures) / ragQueriesTotal) * 100 
+                    : 100;
+                
+                // Determine status color based on success rate
+                let successRateStatusClass = 'status-good';
+                if (ragSuccessRate < 70) {
+                    successRateStatusClass = 'status-error';
+                } else if (ragSuccessRate < 90) {
+                    successRateStatusClass = 'status-warning';
+                }
+                
+                // Determine status color based on latency
+                let latencyStatusClass = 'status-good';
+                if (avgLatency > 1000) {
+                    latencyStatusClass = 'status-error';
+                } else if (avgLatency > 500) {
+                    latencyStatusClass = 'status-warning';
+                }
+                
+                // Update the RAG card
+                const ragContent = document.getElementById('rag-content');
+                const chartContainer = ragContent.querySelector('.chart-container');
+                ragContent.innerHTML = `
+                    <div class="metric-grid">
+                        <div class="metric">
+                            <div class="metric-label">Documents</div>
+                            <div class="metric-value">${documentCount}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Documents Added</div>
+                            <div class="metric-value">${documentsAdded}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">RAG Queries</div>
+                            <div class="metric-value">${ragQueriesTotal}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Avg. Latency</div>
+                            <div class="metric-value">
+                                <span class="status-indicator ${latencyStatusClass}"></span>
+                                ${avgLatency.toFixed(0)} ms
+                            </div>
+                        </div>
+                    </div>
+                `;
+                ragContent.appendChild(chartContainer);
+                
+                // Update chart data
+                ragChartData.queriesData.push(ragQueriesTotal);
+                ragChartData.documentsData.push(documentCount);
+                updateChartData();
+                
+            } catch (error) {
+                console.error('Error fetching RAG metrics:', error);
+                document.getElementById('rag-content').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Failed to load RAG metrics: ${error.message}
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="rag-chart"></canvas>
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchEvents() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/events?limit=20`);
+                if (!response.ok) throw new Error('Events fetch failed');
+                
+                const events = await response.json();
+                
+                // Update the events card
+                const eventsContent = document.getElementById('events-content');
+                if (events.length === 0) {
+                    eventsContent.innerHTML = `<div class="event-item">No events recorded yet</div>`;
+                    return;
+                }
+                
+                eventsContent.innerHTML = events.map(event => {
+                    // Format event data
+                    let eventDataHtml = '';
+                    if (event.data) {
+                        const dataEntries = Object.entries(event.data);
+                        if (dataEntries.length > 0) {
+                            eventDataHtml = dataEntries.map(([key, value]) => {
+                                return `<span>${key}: ${value}</span>`;
+                            }).join(' | ');
+                        }
+                    }
+                    
+                    // Format timestamp
+                    const timestamp = new Date(event.timestamp);
+                    const timeString = timestamp.toLocaleTimeString();
+                    
+                    // Determine event icon based on type
+                    let eventIcon = 'fa-info-circle';
+                    let eventColor = 'var(--info)';
+                    
+                    if (event.type.includes('error') || event.type.includes('failure')) {
+                        eventIcon = 'fa-exclamation-circle';
+                        eventColor = 'var(--error)';
+                    } else if (event.type.includes('warning')) {
+                        eventIcon = 'fa-exclamation-triangle';
+                        eventColor = 'var(--warning)';
+                    } else if (event.type.includes('success')) {
+                        eventIcon = 'fa-check-circle';
+                        eventColor = 'var(--success)';
+                    } else if (event.type.includes('query')) {
+                        eventIcon = 'fa-search';
+                        eventColor = 'var(--info)';
+                    } else if (event.type.includes('document')) {
+                        eventIcon = 'fa-file-alt';
+                        eventColor = 'var(--accent-primary)';
+                    }
+                    
+                    return `
+                        <div class="event-item">
+                            <div class="event-info">
+                                <div class="event-type">
+                                    <i class="fas ${eventIcon}" style="color: ${eventColor}"></i>
+                                    ${event.type}
+                                </div>
+                                <div class="event-data">${eventDataHtml}</div>
+                            </div>
+                            <div class="event-time">${timeString}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Error fetching events:', error);
+                document.getElementById('events-content').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Failed to load events: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Utility functions
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+            
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function formatTime(seconds) {
+            if (seconds < 60) return `${seconds.toFixed(0)} seconds`;
+            if (seconds < 3600) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}m ${remainingSeconds}s`;
+            }
+            
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+    </script>
+</body>
+</html>
