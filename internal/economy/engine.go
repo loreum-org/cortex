@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/loreum-org/cortex/pkg/types"
 )
 
 const (
@@ -201,6 +203,29 @@ type EconomicEngine struct {
 	mutex           sync.RWMutex
 	queryCounter    map[ModelTier]int64
 	lastPriceUpdate time.Time
+	
+	// User staking system
+	userStakingManager *UserStakingManager
+	
+	// Consensus integration
+	consensusBridge interface {
+		ProcessEconomicTransaction(ctx context.Context, tx *Transaction) (*types.Transaction, error)
+		IsEconomicTransactionFinalized(txID string) bool
+	}
+	
+	// Storage integration
+	storage interface {
+		StoreAccount(account *Account) error
+		LoadAccount(accountID string) (*Account, error)
+		StoreNodeAccount(nodeAccount *NodeAccount) error
+		LoadNodeAccount(nodeID string) (*NodeAccount, error)
+		StoreUserAccount(userAccount *UserAccount) error
+		LoadUserAccount(userID string) (*UserAccount, error)
+		StoreTransaction(tx *Transaction) error
+		LoadTransaction(txID string) (*Transaction, error)
+		GetTransactionsByAccount(accountID string, limit, offset int) ([]*Transaction, error)
+		InvalidateCache(accountID string)
+	}
 }
 
 // NewEconomicEngine creates a new economic engine
@@ -353,12 +378,127 @@ func NewEconomicEngine() *EconomicEngine {
 		lastPriceUpdate: time.Now(),
 	}
 
+	// Initialize user staking manager
+	engine.userStakingManager = NewUserStakingManager(engine)
+
 	// Create network account with initial supply
 	initialSupply := new(big.Int).Mul(big.NewInt(1000000000), TokenUnit) // 1 billion tokens
 	engine.createAccount(networkAccountID, "network")
 	engine.mintTokens(networkAccountID, initialSupply, "Initial token supply")
 
+	// Create staking pool account
+	engine.createAccount("staking_pool", "staking_pool")
+
 	return engine
+}
+
+// SetConsensusBridge sets the consensus bridge for the economic engine
+func (e *EconomicEngine) SetConsensusBridge(bridge interface {
+	ProcessEconomicTransaction(ctx context.Context, tx *Transaction) (*types.Transaction, error)
+	IsEconomicTransactionFinalized(txID string) bool
+}) {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	e.consensusBridge = bridge
+}
+
+// GetUserStakingManager returns the user staking manager
+func (e *EconomicEngine) GetUserStakingManager() *UserStakingManager {
+	return e.userStakingManager
+}
+
+// InitRewardDistributor creates a reward distributor with the given config and stores
+// it on the engine (does NOT start it).
+func (e *EconomicEngine) InitRewardDistributor(cfg RewardDistributorConfig) *RewardDistributor {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	rd := NewRewardDistributor(e, cfg)
+	e.rewardDistributor = rd
+	return rd
+}
+
+// GetRewardDistributor returns the reward distributor if it has been initialised.
+func (e *EconomicEngine) GetRewardDistributor() *RewardDistributor {
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
+	return e.rewardDistributor
+}
+
+// StartRewardDistributor starts the distributor’s background loop if it exists.
+func (e *EconomicEngine) StartRewardDistributor() {
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
+	if e.rewardDistributor != nil {
+		e.rewardDistributor.Start()
+	}
+}
+
+// StopRewardDistributor stops the background loop if running.
+func (e *EconomicEngine) StopRewardDistributor() {
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
+	if e.rewardDistributor != nil {
+		e.rewardDistributor.Stop()
+	}
+}
+
+// StakeToNode allows a user to stake LORE to a node
+func (e *EconomicEngine) StakeToNode(account, nodeID string, amount *big.Int) (*UserStake, error) {
+	return e.userStakingManager.StakeToNode(account, nodeID, amount)
+}
+
+// RequestStakeWithdrawal initiates a stake withdrawal request
+func (e *EconomicEngine) RequestStakeWithdrawal(account, nodeID string, amount *big.Int) error {
+	return e.userStakingManager.RequestWithdrawal(account, nodeID, amount)
+}
+
+// ExecuteStakeWithdrawal completes a stake withdrawal
+func (e *EconomicEngine) ExecuteStakeWithdrawal(account, nodeID string) (*Transaction, error) {
+	return e.userStakingManager.ExecuteWithdrawal(account, nodeID)
+}
+
+// RecordQueryResult records a query result for performance tracking and potential slashing
+func (e *EconomicEngine) RecordQueryResult(nodeID, queryID string, success bool, responseTimeMs int64) {
+	e.userStakingManager.RecordQueryResult(nodeID, queryID, success, responseTimeMs)
+}
+
+// SlashNode slashes stakes for a node due to poor performance
+func (e *EconomicEngine) SlashNode(nodeID, reason string, severity float64, queryID string) (*SlashingEvent, error) {
+	return e.userStakingManager.SlashNode(nodeID, reason, severity, queryID)
+}
+
+// GetNodeStakeInfo returns staking information for a node
+func (e *EconomicEngine) GetNodeStakeInfo(nodeID string) *NodeStakeInfo {
+	return e.userStakingManager.GetNodeStakeInfo(nodeID)
+}
+
+// GetUserStakes returns all stakes for a user
+func (e *EconomicEngine) GetUserStakes(account string) []*UserStake {
+	return e.userStakingManager.GetUserStakes(account)
+}
+
+// GetAllNodeStakes returns staking info for all nodes
+func (e *EconomicEngine) GetAllNodeStakes() map[string]*NodeStakeInfo {
+	return e.userStakingManager.GetAllNodeStakes()
+}
+
+// SetStorage sets the storage backend for the economic engine
+func (e *EconomicEngine) SetStorage(storage interface {
+	StoreAccount(account *Account) error
+	LoadAccount(accountID string) (*Account, error)
+	StoreNodeAccount(nodeAccount *NodeAccount) error
+	LoadNodeAccount(nodeID string) (*NodeAccount, error)
+	StoreUserAccount(userAccount *UserAccount) error
+	LoadUserAccount(userID string) (*UserAccount, error)
+	StoreTransaction(tx *Transaction) error
+	LoadTransaction(txID string) (*Transaction, error)
+	GetTransactionsByAccount(accountID string, limit, offset int) ([]*Transaction, error)
+	InvalidateCache(accountID string)
+}) {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	e.storage = storage
 }
 
 // createAccount creates a new account
@@ -408,6 +548,15 @@ func (e *EconomicEngine) CreateUserAccount(id, address string) (*UserAccount, er
 	e.accounts[id] = account
 	e.userAccounts[id] = userAccount
 
+	// Persist to storage
+	if e.storage != nil {
+		go func() {
+			if err := e.storage.StoreUserAccount(userAccount); err != nil {
+				log.Printf("Failed to persist user account %s: %v", id, err)
+			}
+		}()
+	}
+
 	return userAccount, nil
 }
 
@@ -444,20 +593,42 @@ func (e *EconomicEngine) CreateNodeAccount(id, address string) (*NodeAccount, er
 	e.accounts[id] = account
 	e.nodeAccounts[id] = nodeAccount
 
+	// Persist to storage
+	if e.storage != nil {
+		go func() {
+			if err := e.storage.StoreNodeAccount(nodeAccount); err != nil {
+				log.Printf("Failed to persist node account %s: %v", id, err)
+			}
+		}()
+	}
+
 	return nodeAccount, nil
 }
 
 // GetAccount retrieves an account by ID
 func (e *EconomicEngine) GetAccount(id string) (*Account, error) {
 	e.mutex.RLock()
-	defer e.mutex.RUnlock()
-
+	// Try memory cache first
 	account, exists := e.accounts[id]
-	if !exists {
-		return nil, ErrAccountNotFound
+	if exists {
+		e.mutex.RUnlock()
+		return account, nil
+	}
+	e.mutex.RUnlock()
+
+	// Load from persistent storage if available
+	if e.storage != nil {
+		storedAccount, err := e.storage.LoadAccount(id)
+		if err == nil {
+			// Cache in memory
+			e.mutex.Lock()
+			e.accounts[id] = storedAccount
+			e.mutex.Unlock()
+			return storedAccount, nil
+		}
 	}
 
-	return account, nil
+	return nil, ErrAccountNotFound
 }
 
 // GetNodeAccount retrieves a node account by ID
@@ -554,6 +725,51 @@ func (e *EconomicEngine) Transfer(fromID, toID string, amount *big.Int, descript
 	}
 
 	e.transactions = append(e.transactions, tx)
+
+	// Persist transaction to storage
+	if e.storage != nil {
+		go func() {
+			if err := e.storage.StoreTransaction(tx); err != nil {
+				log.Printf("Failed to persist transaction %s: %v", tx.ID, err)
+			}
+		}()
+	}
+
+	// Persist account updates to storage
+	if e.storage != nil {
+		go func() {
+			if err := e.storage.StoreAccount(fromAccount); err != nil {
+				log.Printf("Failed to persist account %s: %v", fromAccount.ID, err)
+			}
+			if err := e.storage.StoreAccount(toAccount); err != nil {
+				log.Printf("Failed to persist account %s: %v", toAccount.ID, err)
+			}
+		}()
+	}
+
+	// Process through consensus if bridge is available
+	if e.consensusBridge != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			
+			_, err := e.consensusBridge.ProcessEconomicTransaction(ctx, tx)
+			if err != nil {
+				log.Printf("Failed to process transfer transaction %s through consensus: %v", tx.ID, err)
+				// Update transaction status to indicate consensus failure
+				e.mutex.Lock()
+				tx.Status = "consensus_failed"
+				e.mutex.Unlock()
+				
+				// Update persisted transaction status
+				if e.storage != nil {
+					e.storage.StoreTransaction(tx)
+				}
+			} else {
+				log.Printf("Transfer transaction %s successfully added to consensus", tx.ID)
+			}
+		}()
+	}
 
 	return tx, nil
 }
@@ -1000,78 +1216,6 @@ func (e *EconomicEngine) DistributeQueryReward(
 	return tx, nil
 }
 
-// SlashNode penalizes a node for poor performance or malicious behavior
-func (e *EconomicEngine) SlashNode(nodeID string, reason string, severity float64) (*Transaction, error) {
-	if severity <= 0 || severity > 1.0 {
-		return nil, fmt.Errorf("severity must be between 0 and 1")
-	}
-
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	nodeAccount, exists := e.nodeAccounts[nodeID]
-	if !exists {
-		return nil, ErrAccountNotFound
-	}
-
-	// Calculate slash amount based on stake and severity
-	slashPercent := severity * 100.0
-	slashFloat := new(big.Float).Mul(
-		new(big.Float).SetInt(nodeAccount.Stake),
-		new(big.Float).Quo(
-			big.NewFloat(slashPercent),
-			big.NewFloat(100.0),
-		),
-	)
-
-	var slashAmount big.Int
-	slashFloat.Int(&slashAmount)
-
-	// Ensure we don't slash more than available
-	if slashAmount.Cmp(nodeAccount.Stake) > 0 {
-		slashAmount = *new(big.Int).Set(nodeAccount.Stake)
-	}
-
-	// Apply the slash
-	nodeAccount.Stake = new(big.Int).Sub(nodeAccount.Stake, &slashAmount)
-
-	// Add slashed tokens to network account
-	networkAccount, _ := e.accounts[e.networkAccount]
-	networkAccount.Balance = new(big.Int).Add(networkAccount.Balance, &slashAmount)
-
-	// Update reputation
-	reputationPenalty := severity * 20.0 // Up to 20 points for max severity
-	nodeAccount.Reputation -= reputationPenalty
-	if nodeAccount.Reputation < 0 {
-		nodeAccount.Reputation = 0
-	}
-
-	// Update timestamps
-	now := time.Now()
-	nodeAccount.UpdatedAt = now
-	networkAccount.UpdatedAt = now
-
-	// Create a slash transaction record
-	tx := &Transaction{
-		ID:          uuid.New().String(),
-		Type:        TransactionTypeSlash,
-		FromID:      nodeID,
-		ToID:        e.networkAccount,
-		Amount:      new(big.Int).Set(&slashAmount),
-		Fee:         big.NewInt(0),
-		Description: fmt.Sprintf("Slashed for: %s", reason),
-		Metadata: map[string]any{
-			"reason":   reason,
-			"severity": severity,
-		},
-		Timestamp: now,
-		Status:    "completed",
-	}
-
-	e.transactions = append(e.transactions, tx)
-
-	return tx, nil
-}
 
 // mintTokens creates new tokens and adds them to an account
 func (e *EconomicEngine) mintTokens(accountID string, amount *big.Int, reason string) (*Transaction, error) {

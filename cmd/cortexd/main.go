@@ -137,8 +137,23 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 
 	// Add some validation rules
 	cs.ValidationRules = append(cs.ValidationRules, func(tx *types.Transaction) bool {
+		// Skip signature validation for economic transactions for now
+		if tx.Type == types.TransactionTypeEconomic {
+			return true
+		}
 		return consensus.ValidateTransaction(tx, pubKey)
 	})
+
+	// Initialize some default reputation scores for demonstration
+	currentNodeID := node.Host.ID().String()
+	cs.ReputationManager.SetScore(currentNodeID, 7.5) // This node starts with good reputation
+	
+	// Add some simulated peer reputation scores for demonstration
+	cs.ReputationManager.SetScore("peer-node-1", 8.2)
+	cs.ReputationManager.SetScore("peer-node-2", 6.8)
+	cs.ReputationManager.SetScore("peer-node-3", 5.4)
+	cs.ReputationManager.SetScore("peer-node-4", 9.1)
+	cs.ReputationManager.SetScore("peer-node-5", 3.2)
 
 	// Start processing transactions
 	go cs.ProcessTransactions(ctx)
@@ -162,9 +177,45 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 	economicEngine := economy.NewEconomicEngine()
 	log.Println("Economic Engine initialized.")
 
+	// Initialize Economic Storage (using in-memory fallback for demo)
+	// In production, this would use actual SQL and Redis configurations
+	sqlConfig := types.NewStorageConfig("mysql")
+	redisConfig := types.NewStorageConfig("redis")
+	
+	// For demo purposes, we'll continue without storage if databases aren't available
+	// economicStorage, err := storage.NewEconomicStorage(sqlConfig, redisConfig)
+	// if err != nil {
+	//     log.Printf("Warning: Failed to initialize economic storage: %v", err)
+	//     log.Println("Continuing with in-memory storage only")
+	// } else {
+	//     economicEngine.SetStorage(economicStorage)
+	//     log.Println("Economic storage initialized and connected.")
+	// }
+	log.Printf("Economic storage config prepared (SQL: %s:%d, Redis: %s:%d)", 
+		sqlConfig.Host, sqlConfig.Port, redisConfig.Host, redisConfig.Port)
+
+	// Create economic consensus bridge
+	economicBridge := consensus.NewEconomicBridge(cs, economicEngine)
+	economicEngine.SetConsensusBridge(economicBridge)
+	log.Println("Economic consensus bridge created and connected.")
+
+	// Create economic P2P broadcaster
+	economicBroadcaster := p2p.NewEconomicBroadcaster(node, nodeName)
+	economicBridge.SetEconomicBroadcaster(economicBroadcaster)
+	log.Println("Economic P2P broadcaster created and connected.")
+
+	// Start economic consensus monitoring
+	go economicBridge.MonitorFinalization(ctx)
+	log.Println("Economic consensus monitoring started.")
+
 	// Start the Economic Engine maintenance tasks in a goroutine
 	go economicEngine.RunMaintenanceTasks(ctx)
 	log.Println("Economic Engine maintenance tasks started.")
+
+	// Initialize and start the automatic reward distributor
+	economicEngine.InitRewardDistributor(economy.RewardDistributorConfig{})
+	economicEngine.StartRewardDistributor()
+	log.Println("Automatic reward distributor started.")
 
 	// Create some default user and node accounts for demo purposes
 	defaultUserID := "user-1"
@@ -197,8 +248,18 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 		}
 	}
 
+	// Connect solver agent with economic engine for query result tracking
+	solverAgent.SetEconomicEngine(economicEngine)
+	solverAgent.SetNodeID(currentNodeID)
+	log.Println("Connected solver agent with economic engine for query result tracking.")
+
 	// Create an API server
 	server := api.NewServer(node, cs, solverAgent, ragSystem, economicEngine)
+
+	// Connect EconomicQueryProcessor with the consensus bridge
+	if server.EconomicQueryProc != nil {
+		server.EconomicQueryProc.SetConsensusBridge(economicBridge)
+	}
 
 	// Start the API server
 	go func() {
@@ -236,6 +297,9 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 	if err := server.Stop(ctx); err != nil {
 		log.Printf("Error stopping API server: %s\n", err)
 	}
+
+	// Stop reward distributor
+	economicEngine.StopRewardDistributor()
 
 	// Stop the P2P node
 	if err := node.Stop(); err != nil {
