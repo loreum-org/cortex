@@ -39,9 +39,16 @@ func (v *VectorStorage) AddDocument(doc types.VectorDocument) error {
 		return errors.New("document embedding dimensions do not match index dimensions")
 	}
 
+	// Check if this is a new document or an update
+	_, exists := v.documents[doc.ID]
+
 	// Add the document to the storage
 	v.documents[doc.ID] = doc
-	v.index.Size++
+
+	// Only increment size if it's a new document
+	if !exists {
+		v.index.Size++
+	}
 
 	return nil
 }

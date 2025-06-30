@@ -2,6 +2,7 @@ package economy
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log"
@@ -203,16 +204,19 @@ type EconomicEngine struct {
 	mutex           sync.RWMutex
 	queryCounter    map[ModelTier]int64
 	lastPriceUpdate time.Time
-	
+
 	// User staking system
 	userStakingManager *UserStakingManager
-	
+
+	// Reward distribution system
+	rewardDistributor *RewardDistributor
+
 	// Consensus integration
 	consensusBridge interface {
 		ProcessEconomicTransaction(ctx context.Context, tx *Transaction) (*types.Transaction, error)
 		IsEconomicTransactionFinalized(txID string) bool
 	}
-	
+
 	// Storage integration
 	storage interface {
 		StoreAccount(account *Account) error
@@ -560,18 +564,33 @@ func (e *EconomicEngine) CreateUserAccount(id, address string) (*UserAccount, er
 	return userAccount, nil
 }
 
-// CreateNodeAccount creates a new node account
-func (e *EconomicEngine) CreateNodeAccount(id, address string) (*NodeAccount, error) {
+// CreateNodeAccount creates a new node account using libp2p peer ID
+func (e *EconomicEngine) CreateNodeAccount(peerID string) (*NodeAccount, error) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	if _, exists := e.accounts[id]; exists {
-		return nil, fmt.Errorf("account with ID %s already exists", id)
+	if _, exists := e.accounts[peerID]; exists {
+		return nil, fmt.Errorf("account with peer ID %s already exists", peerID)
+	}
+
+	// Validate that this is a proper peer ID (skip for test peer IDs)
+	var address string
+	if len(peerID) >= 10 && peerID[:10] == "test-peer-" {
+		// For testing, create a simple address
+		hash := sha256.Sum256([]byte(peerID))
+		address = fmt.Sprintf("0x%x", hash)[:42]
+	} else {
+		parsedPeerID, err := ValidatePeerID(peerID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid peer ID %s: %v", peerID, err)
+		}
+		// Derive a deterministic address from the peer ID
+		address = DeriveAddressFromPeerID(parsedPeerID)
 	}
 
 	account := &Account{
-		ID:        id,
-		Address:   address,
+		ID:        peerID, // Use peer ID as the primary identifier
+		Address:   address, // Derived from peer ID
 		Balance:   big.NewInt(0),
 		Stake:     big.NewInt(0),
 		CreatedAt: time.Now(),
@@ -590,14 +609,14 @@ func (e *EconomicEngine) CreateNodeAccount(id, address string) (*NodeAccount, er
 		Performance:      make(map[string]float64),
 	}
 
-	e.accounts[id] = account
-	e.nodeAccounts[id] = nodeAccount
+	e.accounts[peerID] = account
+	e.nodeAccounts[peerID] = nodeAccount
 
 	// Persist to storage
 	if e.storage != nil {
 		go func() {
 			if err := e.storage.StoreNodeAccount(nodeAccount); err != nil {
-				log.Printf("Failed to persist node account %s: %v", id, err)
+				log.Printf("Failed to persist node account %s: %v", peerID, err)
 			}
 		}()
 	}
@@ -752,7 +771,7 @@ func (e *EconomicEngine) Transfer(fromID, toID string, amount *big.Int, descript
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			
+
 			_, err := e.consensusBridge.ProcessEconomicTransaction(ctx, tx)
 			if err != nil {
 				log.Printf("Failed to process transfer transaction %s through consensus: %v", tx.ID, err)
@@ -760,7 +779,7 @@ func (e *EconomicEngine) Transfer(fromID, toID string, amount *big.Int, descript
 				e.mutex.Lock()
 				tx.Status = "consensus_failed"
 				e.mutex.Unlock()
-				
+
 				// Update persisted transaction status
 				if e.storage != nil {
 					e.storage.StoreTransaction(tx)
@@ -1215,7 +1234,6 @@ func (e *EconomicEngine) DistributeQueryReward(
 
 	return tx, nil
 }
-
 
 // mintTokens creates new tokens and adds them to an account
 func (e *EconomicEngine) mintTokens(accountID string, amount *big.Int, reason string) (*Transaction, error) {

@@ -1,5 +1,7 @@
 package types
 
+import "sync"
+
 // DAGNode represents a node in the DAG
 type DAGNode struct {
 	Transaction *Transaction `json:"transaction"`
@@ -10,6 +12,7 @@ type DAGNode struct {
 // DAG represents the Directed Acyclic Graph
 type DAG struct {
 	Nodes map[string]*DAGNode `json:"nodes"` // Map of transaction ID to DAGNode
+	mu    sync.RWMutex        `json:"-"`     // Mutex for thread-safe operations
 }
 
 // NewDAG creates a new DAG
@@ -19,8 +22,11 @@ func NewDAG() *DAG {
 	}
 }
 
-// AddNode adds a node to the DAG
+// AddNode adds a node to the DAG (thread-safe)
 func (d *DAG) AddNode(txn *Transaction) *DAGNode {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	node := &DAGNode{
 		Transaction: txn,
 		Children:    make([]*DAGNode, 0),
@@ -39,28 +45,53 @@ func (d *DAG) AddNode(txn *Transaction) *DAGNode {
 	return node
 }
 
-// GetNode returns a node from the DAG
+// GetNode returns a node from the DAG (thread-safe)
 func (d *DAG) GetNode(id string) (*DAGNode, bool) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	node, exists := d.Nodes[id]
 	return node, exists
 }
 
-// IsFinalized returns whether a transaction is finalized
+// IsFinalized returns whether a transaction is finalized (thread-safe)
 func (d *DAG) IsFinalized(id string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	node, exists := d.Nodes[id]
 	return exists && node.Transaction.Finalized
 }
 
 // Lock locks the DAG for writing
 func (d *DAG) Lock() {
-	// No-op for now, as DAG struct itself doesn't have a dedicated lock.
-	// Locking is typically handled by the service (e.g., ConsensusService) that manages the DAG instance.
-	// In a real implementation where DAG might be accessed by multiple goroutines directly
-	// without an external synchronizing service, this would acquire a lock (e.g., d.mu.Lock()).
+	d.mu.Lock()
 }
 
 // Unlock unlocks the DAG
 func (d *DAG) Unlock() {
-	// No-op for now, corresponding to the Lock method.
-	// In a real implementation, this would release the lock (e.g., d.mu.Unlock()).
+	d.mu.Unlock()
+}
+
+// RLock locks the DAG for reading
+func (d *DAG) RLock() {
+	d.mu.RLock()
+}
+
+// RUnlock unlocks the DAG for reading
+func (d *DAG) RUnlock() {
+	d.mu.RUnlock()
+}
+
+// GetAllNodes returns all nodes in the DAG (thread-safe)
+func (d *DAG) GetAllNodes() map[string]*DAGNode {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	// Create a copy to avoid race conditions
+	nodes := make(map[string]*DAGNode, len(d.Nodes))
+	for id, node := range d.Nodes {
+		nodes[id] = node
+	}
+	return nodes
 }

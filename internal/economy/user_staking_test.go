@@ -1,7 +1,6 @@
 package economy
 
 import (
-	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -30,7 +29,7 @@ func setupTestStakingEnvironment(t *testing.T) (*EconomicEngine, *UserStakingMan
 	// Create test nodes
 	nodeIDs := []string{"node1", "node2", "node3"}
 	for _, nodeID := range nodeIDs {
-		_, err := engine.CreateNodeAccount(nodeID, "0x"+nodeID)
+		_, err := engine.CreateNodeAccount(nodeID)
 		require.NoError(t, err)
 
 		// Fund node with 5,000 tokens
@@ -152,7 +151,7 @@ func TestStakeToNode(t *testing.T) {
 
 // TestRequestWithdrawal tests requesting withdrawal of staked tokens
 func TestRequestWithdrawal(t *testing.T) {
-	engine, stakingManager := setupTestStakingEnvironment(t)
+	_, stakingManager := setupTestStakingEnvironment(t)
 
 	// Setup: Stake tokens first
 	userID := "user1"
@@ -310,7 +309,7 @@ func TestExecuteWithdrawal(t *testing.T) {
 
 // TestStakeDistribution tests distributing stakes among multiple nodes
 func TestStakeDistribution(t *testing.T) {
-	engine, stakingManager := setupTestStakingEnvironment(t)
+	_, stakingManager := setupTestStakingEnvironment(t)
 
 	// Test staking to multiple nodes
 	t.Run("StakeToMultipleNodes", func(t *testing.T) {
@@ -343,7 +342,7 @@ func TestStakeDistribution(t *testing.T) {
 	t.Run("MultipleUsersToSameNode", func(t *testing.T) {
 		nodeID := "node1"
 		userIDs := []string{"user1", "user2", "user3"}
-		
+
 		// User 1 already staked in previous test
 		existingStake := stakingManager.GetNodeStakeInfo(nodeID).TotalUserStake
 
@@ -374,7 +373,7 @@ func TestStakeDistribution(t *testing.T) {
 
 // TestReputationBoosting tests reputation boosting from staking
 func TestReputationBoosting(t *testing.T) {
-	engine, stakingManager := setupTestStakingEnvironment(t)
+	_, stakingManager := setupTestStakingEnvironment(t)
 
 	// Test reputation boost from staking
 	t.Run("StakingIncreasesReputation", func(t *testing.T) {
@@ -407,23 +406,23 @@ func TestReputationBoosting(t *testing.T) {
 
 		// Check reputation boost matches formula
 		stakeInfo := stakingManager.GetNodeStakeInfo(nodeID)
-		
+
 		// Convert stake to float for calculation
 		stakeFloat, _ := new(big.Float).SetInt(stakeAmount).Float64()
 		expectedBoost := stakeFloat * stakingManager.stakingConfig.ReputationMultiplier
-		
+
 		assert.InDelta(t, expectedBoost, stakeInfo.ReputationBoost, 0.001)
 	})
 }
 
 // TestPerformanceTracking tests performance tracking and slashing
 func TestPerformanceTracking(t *testing.T) {
-	engine, stakingManager := setupTestStakingEnvironment(t)
+	_, stakingManager := setupTestStakingEnvironment(t)
 
 	// Set up stakes for testing
 	nodeID := "node1"
 	userIDs := []string{"user1", "user2"}
-	
+
 	for _, userID := range userIDs {
 		stakeAmount := new(big.Int).Mul(big.NewInt(500), TokenUnit)
 		_, err := stakingManager.StakeToNode(userID, nodeID, stakeAmount)
@@ -479,7 +478,7 @@ func TestPerformanceTracking(t *testing.T) {
 		require.NotNil(t, updatedStakeInfo.PerformanceData)
 		assert.NotEmpty(t, updatedStakeInfo.PerformanceData.SlashingEvents)
 		assert.Equal(t, 1, len(updatedStakeInfo.PerformanceData.SlashingEvents))
-		
+
 		// Check total slashed amount
 		assert.Equal(t, slashingEvent.SlashedAmount, updatedStakeInfo.PerformanceData.TotalSlashed)
 	})
@@ -488,27 +487,27 @@ func TestPerformanceTracking(t *testing.T) {
 	t.Run("AutoSlashingFromPoorPerformance", func(t *testing.T) {
 		nodeID := "node2"
 		userID := "user3"
-		
+
 		// Setup stake
 		stakeAmount := new(big.Int).Mul(big.NewInt(1000), TokenUnit)
 		_, err := stakingManager.StakeToNode(userID, nodeID, stakeAmount)
 		require.NoError(t, err)
-		
+
 		// Record many failed queries to trigger auto-slashing
 		for i := 0; i < 20; i++ {
 			stakingManager.RecordQueryResult(nodeID, "query_"+string(rune(i)), i%3 != 0, 100)
 		}
-		
+
 		// Check performance data
 		nodeStakeInfo := stakingManager.GetNodeStakeInfo(nodeID)
 		require.NotNil(t, nodeStakeInfo.PerformanceData)
-		
+
 		// Success rate should be around 2/3 (below threshold)
 		assert.InDelta(t, 0.667, nodeStakeInfo.PerformanceData.SuccessRate, 0.1)
-		
+
 		// Wait briefly for async slashing to complete
 		time.Sleep(100 * time.Millisecond)
-		
+
 		// Check if slashing occurred
 		updatedStakeInfo := stakingManager.GetNodeStakeInfo(nodeID)
 		if len(updatedStakeInfo.PerformanceData.SlashingEvents) > 0 {
@@ -573,7 +572,7 @@ func TestEdgeCases(t *testing.T) {
 	// Test case: Slashing with no stakes
 	t.Run("SlashingWithNoStakes", func(t *testing.T) {
 		nodeID := "node_without_stakes"
-		_, err := engine.CreateNodeAccount(nodeID, "0x"+nodeID)
+		_, err := engine.CreateNodeAccount(nodeID)
 		require.NoError(t, err)
 
 		_, err = stakingManager.SlashNode(nodeID, "test reason", 0.5, "test_query")
@@ -601,7 +600,7 @@ func TestEdgeCases(t *testing.T) {
 
 // TestGetNodeStakeInfo tests retrieving node staking information
 func TestGetNodeStakeInfo(t *testing.T) {
-	engine, stakingManager := setupTestStakingEnvironment(t)
+	_, stakingManager := setupTestStakingEnvironment(t)
 
 	// Setup: Multiple users stake to a node
 	nodeID := "node1"
@@ -611,7 +610,7 @@ func TestGetNodeStakeInfo(t *testing.T) {
 	for i, userID := range users {
 		stakeAmount := new(big.Int).Mul(big.NewInt(int64(100*(i+1))), TokenUnit)
 		totalStake = new(big.Int).Add(totalStake, stakeAmount)
-		
+
 		_, err := stakingManager.StakeToNode(userID, nodeID, stakeAmount)
 		require.NoError(t, err)
 	}
@@ -619,7 +618,7 @@ func TestGetNodeStakeInfo(t *testing.T) {
 	// Test getting node stake info
 	t.Run("GetNodeStakeInfo", func(t *testing.T) {
 		stakeInfo := stakingManager.GetNodeStakeInfo(nodeID)
-		
+
 		assert.Equal(t, nodeID, stakeInfo.NodeID)
 		assert.Equal(t, totalStake, stakeInfo.TotalUserStake)
 		assert.Equal(t, len(users), stakeInfo.StakeCount)
@@ -630,7 +629,7 @@ func TestGetNodeStakeInfo(t *testing.T) {
 	// Test getting all node stakes
 	t.Run("GetAllNodeStakes", func(t *testing.T) {
 		allStakes := stakingManager.GetAllNodeStakes()
-		
+
 		assert.NotEmpty(t, allStakes)
 		assert.Contains(t, allStakes, nodeID)
 		assert.Equal(t, totalStake, allStakes[nodeID].TotalUserStake)
@@ -640,11 +639,11 @@ func TestGetNodeStakeInfo(t *testing.T) {
 	t.Run("GetUserStakes", func(t *testing.T) {
 		for i, userID := range users {
 			userStakes := stakingManager.GetUserStakes(userID)
-			
+
 			assert.NotEmpty(t, userStakes)
 			assert.Equal(t, 1, len(userStakes))
 			assert.Equal(t, nodeID, userStakes[0].NodeID)
-			
+
 			expectedAmount := new(big.Int).Mul(big.NewInt(int64(100*(i+1))), TokenUnit)
 			assert.Equal(t, expectedAmount, userStakes[0].Amount)
 		}
@@ -657,7 +656,7 @@ func TestStakingConfig(t *testing.T) {
 
 	t.Run("DefaultConfig", func(t *testing.T) {
 		config := stakingManager.GetStakingConfig()
-		
+
 		assert.NotNil(t, config)
 		assert.Greater(t, config.ReputationMultiplier, 0.0)
 		assert.NotNil(t, config.RewardRate)

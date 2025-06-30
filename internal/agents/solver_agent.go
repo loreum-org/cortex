@@ -1,4 +1,4 @@
-package agenthub
+package agents
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/loreum-org/cortex/internal/ai"
+	"github.com/loreum-org/cortex/internal/rag"
 	"github.com/loreum-org/cortex/pkg/types"
 )
 
@@ -29,13 +30,23 @@ type PredictorConfig struct {
 // SolverAgent implements the Agent interface for solving queries
 type SolverAgent struct {
 	modelManager   *ai.ModelManager
+	ragSystem      *rag.RAGSystem
 	config         *SolverConfig
 	metrics        types.Metrics
 	defaultOptions ai.GenerateOptions
+	economicEngine interface {
+		RecordQueryResult(nodeID, queryID string, success bool, responseTimeMs int64)
+	}
+	nodeID string
 }
 
 // NewSolverAgent creates a new solver agent
 func NewSolverAgent(config *SolverConfig) *SolverAgent {
+	return NewSolverAgentWithRAG(config, nil)
+}
+
+// NewSolverAgentWithRAG creates a new solver agent with RAG system
+func NewSolverAgentWithRAG(config *SolverConfig, ragSystem *rag.RAGSystem) *SolverAgent {
 	// Initialize config if nil
 	if config == nil {
 		config = &SolverConfig{}
@@ -83,8 +94,9 @@ func NewSolverAgent(config *SolverConfig) *SolverAgent {
 		defaultOptions.Temperature = float32(config.PredictorConfig.Temperature)
 	}
 
-	return &SolverAgent{
+	agent := &SolverAgent{
 		modelManager: modelManager,
+		ragSystem:    ragSystem,
 		config:       config,
 		metrics: types.Metrics{
 			ResponseTime:   0.0,
@@ -93,6 +105,23 @@ func NewSolverAgent(config *SolverConfig) *SolverAgent {
 			RequestsPerMin: 0,
 		},
 		defaultOptions: defaultOptions,
+	}
+
+	// Configure consciousness runtime with model manager if RAG system is available
+	if ragSystem != nil && ragSystem.ContextManager != nil {
+		ragSystem.ContextManager.SetModelManager(modelManager, config.DefaultModel)
+	}
+
+	return agent
+}
+
+// SetRAGSystem sets the RAG system for the solver agent
+func (s *SolverAgent) SetRAGSystem(ragSystem *rag.RAGSystem) {
+	s.ragSystem = ragSystem
+
+	// Configure consciousness runtime with model manager if available
+	if ragSystem != nil && ragSystem.ContextManager != nil && s.modelManager != nil {
+		ragSystem.ContextManager.SetModelManager(s.modelManager, s.config.DefaultModel)
 	}
 }
 
@@ -151,21 +180,84 @@ func tryRegisterOpenAIModels(manager *ai.ModelManager) error {
 	return nil
 }
 
-// Process processes a query
+// Process processes a query with context tracking
 func (s *SolverAgent) Process(ctx context.Context, query *types.Query) (*types.Response, error) {
 	startTime := time.Now()
+	success := false
+	var eventID string
+	var ragSources []string
 
+	// Track the query if RAG system is available
+	if s.ragSystem != nil && s.ragSystem.ContextManager != nil {
+		eventID = s.ragSystem.ContextManager.TrackQuery(ctx, query.Text, query.Type, map[string]interface{}{
+			"query_id": query.ID,
+			"model":    s.config.DefaultModel,
+		})
+
+		// Try consciousness-based processing first
+		if consciousnessRuntime := s.ragSystem.ContextManager.GetConsciousnessRuntime(); consciousnessRuntime != nil {
+			log.Printf("Processing query with consciousness runtime: %s", query.Text)
+			response, err := consciousnessRuntime.ProcessQuery(ctx, query)
+			if err == nil {
+				success = true
+				return response, nil
+			}
+			log.Printf("Consciousness processing failed, falling back to standard processing: %v", err)
+		}
+	}
+
+	// Record query result at the end
+	defer func() {
+		responseTime := time.Since(startTime).Milliseconds()
+		s.updateMetrics(time.Since(startTime), success)
+
+		// Track the response if RAG system is available
+		if s.ragSystem != nil && s.ragSystem.ContextManager != nil && eventID != "" {
+			var responseText string
+			var errorMsg string
+			if success {
+				responseText = "Query processed successfully"
+			} else {
+				errorMsg = "Query processing failed"
+			}
+			s.ragSystem.ContextManager.TrackResponse(ctx, eventID, responseText, time.Since(startTime), success, errorMsg)
+		}
+
+		// Record result for staking system if economic engine is available
+		if s.economicEngine != nil && s.nodeID != "" {
+			s.economicEngine.RecordQueryResult(s.nodeID, query.ID, success, responseTime)
+		}
+	}()
+
+	// Check if this should use RAG processing
+	if s.ragSystem != nil && (query.Type == "rag" || strings.Contains(strings.ToLower(query.Text), "document") || strings.Contains(strings.ToLower(query.Text), "search")) {
+		// Use RAG system for processing
+		log.Printf("Processing query with RAG system")
+		output, err := s.ragSystem.QueryWithContext(ctx, query.Text, true, 5)
+		if err != nil {
+			return nil, fmt.Errorf("RAG query failed: %w", err)
+		}
+
+		// Format the response with RAG metadata
+		response, err := s.formatResponseWithRAG(query, output, "rag-system", ragSources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to format RAG response: %w", err)
+		}
+
+		success = true
+		return response, nil
+	}
+
+	// Standard processing with contextual enhancement
 	// Select the appropriate model
 	model, err := s.selectModel(query)
 	if err != nil {
-		s.updateMetrics(time.Since(startTime), false)
 		return nil, fmt.Errorf("failed to select model: %w", err)
 	}
 
-	// Prepare the input for the model
-	input, err := s.prepareInput(query)
+	// Prepare the input for the model with context if available
+	input, err := s.prepareContextualInput(ctx, query)
 	if err != nil {
-		s.updateMetrics(time.Since(startTime), false)
 		return nil, fmt.Errorf("failed to prepare input: %w", err)
 	}
 
@@ -183,18 +275,16 @@ func (s *SolverAgent) Process(ctx context.Context, query *types.Query) (*types.R
 	log.Printf("Processing query with model: %s", model.GetModelInfo().ID)
 	output, err := model.GenerateResponse(ctx, input, options)
 	if err != nil {
-		s.updateMetrics(time.Since(startTime), false)
 		return nil, fmt.Errorf("model inference failed: %w", err)
 	}
 
 	// Format the response
-	response, err := s.formatResponse(query, output, model.GetModelInfo().ID)
+	response, err := s.formatResponseWithRAG(query, output, model.GetModelInfo().ID, ragSources)
 	if err != nil {
-		s.updateMetrics(time.Since(startTime), false)
 		return nil, fmt.Errorf("failed to format response: %w", err)
 	}
 
-	s.updateMetrics(time.Since(startTime), true)
+	success = true
 	return response, nil
 }
 
@@ -293,12 +383,58 @@ func (s *SolverAgent) prepareInput(query *types.Query) (string, error) {
 	return fmt.Sprintf("[%s] %s", strings.ToUpper(query.Type), query.Text), nil
 }
 
+// prepareContextualInput prepares the input for the model with conversation context
+func (s *SolverAgent) prepareContextualInput(ctx context.Context, query *types.Query) (string, error) {
+	// Start with the basic input preparation
+	baseInput, err := s.prepareInput(query)
+	if err != nil {
+		return "", err
+	}
+
+	// If RAG system is available, try to get contextual prompt
+	if s.ragSystem != nil && s.ragSystem.ContextManager != nil {
+		contextualPrompt, contextErr := s.ragSystem.ContextManager.GetContextualPrompt(ctx, baseInput, 3)
+		if contextErr != nil {
+			log.Printf("Error getting contextual prompt: %v", contextErr)
+			return baseInput, nil // Fallback to base input
+		}
+		return contextualPrompt, nil
+	}
+
+	return baseInput, nil
+}
+
 // formatResponse formats the output as a response
 func (s *SolverAgent) formatResponse(query *types.Query, output string, modelID string) (*types.Response, error) {
 	return &types.Response{
 		QueryID:   query.ID,
 		Text:      output,
 		Data:      map[string]string{"model": modelID},
+		Metadata:  query.Metadata,
+		Status:    "success",
+		Timestamp: time.Now().Unix(),
+	}, nil
+}
+
+// formatResponseWithRAG formats the output as a response with RAG metadata
+func (s *SolverAgent) formatResponseWithRAG(query *types.Query, output string, modelID string, ragSources []string) (*types.Response, error) {
+	data := map[string]string{"model": modelID}
+
+	if len(ragSources) > 0 {
+		data["rag_sources"] = strings.Join(ragSources, ", ")
+		data["context_used"] = "true"
+	}
+
+	// Add conversation tracking info if available
+	if s.ragSystem != nil && s.ragSystem.ContextManager != nil {
+		data["conversation_id"] = s.ragSystem.ContextManager.GetConversationID()
+		data["context_tracking"] = "enabled"
+	}
+
+	return &types.Response{
+		QueryID:   query.ID,
+		Text:      output,
+		Data:      data,
 		Metadata:  query.Metadata,
 		Status:    "success",
 		Timestamp: time.Now().Unix(),
@@ -350,4 +486,16 @@ func (s *SolverAgent) SetDefaultModel(modelID string) error {
 
 	s.config.DefaultModel = modelID
 	return nil
+}
+
+// SetEconomicEngine sets the economic engine for query result tracking
+func (s *SolverAgent) SetEconomicEngine(engine interface {
+	RecordQueryResult(nodeID, queryID string, success bool, responseTimeMs int64)
+}) {
+	s.economicEngine = engine
+}
+
+// SetNodeID sets the node ID for this solver agent
+func (s *SolverAgent) SetNodeID(nodeID string) {
+	s.nodeID = nodeID
 }

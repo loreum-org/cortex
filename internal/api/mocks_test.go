@@ -17,7 +17,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
 
-	"github.com/loreum-org/cortex/internal/agenthub"
+	"github.com/loreum-org/cortex/internal/agents"
 	"github.com/loreum-org/cortex/internal/ai"
 	"github.com/loreum-org/cortex/internal/economy"
 	"github.com/loreum-org/cortex/internal/p2p"
@@ -206,8 +206,8 @@ func (m *MockConsensusService) IsFinalized(id string) bool {
 	return false
 }
 
-// MockSolverAgent is a mock for agenthub.SolverAgent.
-// Note: agenthub.SolverAgent is a concrete type.
+// MockSolverAgent is a mock for agents.SolverAgent.
+// Note: agents.SolverAgent is a concrete type.
 type MockSolverAgent struct {
 	ProcessFunc               func(ctx context.Context, query *types.Query) (*types.Response, error)
 	GetCapabilitiesFunc       func() []types.Capability

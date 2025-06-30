@@ -7,18 +7,18 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/loreum-org/cortex/internal/agenthub"
+	"github.com/loreum-org/cortex/internal/agents"
+	"github.com/loreum-org/cortex/internal/consensus"
 	"github.com/loreum-org/cortex/internal/economy"
 	"github.com/loreum-org/cortex/internal/p2p"
 	"github.com/loreum-org/cortex/internal/rag"
-	"github.com/loreum-org/cortex/internal/consensus"
 	"github.com/loreum-org/cortex/pkg/types"
 )
 
 // EconomicQueryProcessor handles query processing with full economic integration
 type EconomicQueryProcessor struct {
 	EconomicEngine *economy.EconomicEngine
-	SolverAgent    *agenthub.SolverAgent
+	SolverAgent    *agents.SolverAgent
 	RAGSystem      *rag.RAGSystem
 	P2PNode        *p2p.P2PNode
 	Metrics        *ServerMetrics
@@ -28,35 +28,35 @@ type EconomicQueryProcessor struct {
 
 // EconomicQueryRequest represents a query request with economic parameters
 type EconomicQueryRequest struct {
-	Text         string            `json:"text"`
-	Type         string            `json:"type"`
-	Metadata     map[string]string `json:"metadata,omitempty"`
-	Account      string            `json:"account"`
-	ModelTier    string            `json:"model_tier,omitempty"`    // basic, standard, premium, enterprise
-	QueryType    string            `json:"query_type,omitempty"`    // completion, chat, embedding, codegen, rag
-	MaxPrice     string            `json:"max_price,omitempty"`     // Maximum price user is willing to pay
-	MinQuality   float64           `json:"min_quality,omitempty"`   // Minimum quality score required
-	Deadline     int64             `json:"deadline,omitempty"`      // Deadline in milliseconds
-	Priority     int               `json:"priority,omitempty"`      // 1-10, higher is more priority
+	Text       string            `json:"text"`
+	Type       string            `json:"type"`
+	Metadata   map[string]string `json:"metadata,omitempty"`
+	Account    string            `json:"account"`
+	ModelTier  string            `json:"model_tier,omitempty"`  // basic, standard, premium, enterprise
+	QueryType  string            `json:"query_type,omitempty"`  // completion, chat, embedding, codegen, rag
+	MaxPrice   string            `json:"max_price,omitempty"`   // Maximum price user is willing to pay
+	MinQuality float64           `json:"min_quality,omitempty"` // Minimum quality score required
+	Deadline   int64             `json:"deadline,omitempty"`    // Deadline in milliseconds
+	Priority   int               `json:"priority,omitempty"`    // 1-10, higher is more priority
 }
 
 // EconomicQueryResponse represents a query response with economic information
 type EconomicQueryResponse struct {
-	QueryID       string            `json:"query_id"`
-	Text          string            `json:"text"`
-	Data          []byte            `json:"data,omitempty"`
-	Metadata      map[string]string `json:"metadata,omitempty"`
-	Status        string            `json:"status"`
-	Timestamp     int64             `json:"timestamp"`
-	
+	QueryID   string            `json:"query_id"`
+	Text      string            `json:"text"`
+	Data      []byte            `json:"data,omitempty"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
+	Status    string            `json:"status"`
+	Timestamp int64             `json:"timestamp"`
+
 	// Economic information
-	PaymentTxID   string  `json:"payment_tx_id,omitempty"`
-	RewardTxID    string  `json:"reward_tx_id,omitempty"`
-	Price         string  `json:"price,omitempty"`
-	ProcessorID   string  `json:"processor_id,omitempty"`
-	ProcessTime   int64   `json:"process_time_ms"`
-	QualityScore  float64 `json:"quality_score"`
-	Success       bool    `json:"success"`
+	PaymentTxID  string  `json:"payment_tx_id,omitempty"`
+	RewardTxID   string  `json:"reward_tx_id,omitempty"`
+	Price        string  `json:"price,omitempty"`
+	ProcessorID  string  `json:"processor_id,omitempty"`
+	ProcessTime  int64   `json:"process_time_ms"`
+	QualityScore float64 `json:"quality_score"`
+	Success      bool    `json:"success"`
 }
 
 // SetConsensusBridge injects the consensus bridge dependency.
@@ -67,7 +67,7 @@ func (eqp *EconomicQueryProcessor) SetConsensusBridge(cb *consensus.EconomicBrid
 // ProcessEconomicQuery processes a query with full economic integration
 func (eqp *EconomicQueryProcessor) ProcessEconomicQuery(ctx context.Context, req *EconomicQueryRequest) (*EconomicQueryResponse, error) {
 	startTime := time.Now()
-	
+
 	// Validate request
 	if err := eqp.validateRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid request: %w", err)
@@ -75,10 +75,10 @@ func (eqp *EconomicQueryProcessor) ProcessEconomicQuery(ctx context.Context, req
 
 	// Determine model tier and query type
 	modelTier, queryType := eqp.determineModelAndQueryType(req)
-	
+
 	// Calculate input size for pricing
 	inputSize := int64(len(req.Text))
-	
+
 	// Step 1: Process payment
 	paymentTx, err := eqp.processPayment(ctx, req, modelTier, queryType, inputSize)
 	if err != nil {
@@ -124,9 +124,9 @@ func (eqp *EconomicQueryProcessor) ProcessEconomicQuery(ctx context.Context, req
 			Metadata:  req.Metadata,
 			Timestamp: time.Now().Unix(),
 		},
-		ModelTier:     types.ModelTier(modelTier),
-		PaymentID:     paymentTx.ID,
-		Priority:      req.Priority,
+		ModelTier: types.ModelTier(modelTier),
+		PaymentID: paymentTx.ID,
+		Priority:  req.Priority,
 	}
 
 	// Set max price if specified
@@ -152,7 +152,7 @@ func (eqp *EconomicQueryProcessor) ProcessEconomicQuery(ctx context.Context, req
 
 	// Step 5: Calculate quality score
 	qualityScore := eqp.calculateQualityScore(response, req)
-	
+
 	// Check if quality meets minimum requirements
 	if req.MinQuality > 0 && qualityScore < req.MinQuality {
 		return eqp.handleQualityFailure(ctx, paymentTx, query, qualityScore)
@@ -169,9 +169,9 @@ func (eqp *EconomicQueryProcessor) ProcessEconomicQuery(ctx context.Context, req
 
 	// Return economic response
 	economicResponse := &EconomicQueryResponse{
-		QueryID:      query.ID,
-		Text:         response.Text,
-		Data:         func() []byte {
+		QueryID: query.ID,
+		Text:    response.Text,
+		Data: func() []byte {
 			if response.Data != nil {
 				if data, ok := response.Data.([]byte); ok {
 					return data
@@ -205,7 +205,7 @@ func (eqp *EconomicQueryProcessor) validateRequest(req *EconomicQueryRequest) er
 	if req.Account == "" {
 		return fmt.Errorf("user ID is required")
 	}
-	
+
 	// Validate model tier if specified
 	if req.ModelTier != "" {
 		validTiers := map[string]bool{
@@ -215,7 +215,7 @@ func (eqp *EconomicQueryProcessor) validateRequest(req *EconomicQueryRequest) er
 			return fmt.Errorf("invalid model tier: %s", req.ModelTier)
 		}
 	}
-	
+
 	// Validate query type if specified
 	if req.QueryType != "" {
 		validTypes := map[string]bool{
@@ -225,7 +225,7 @@ func (eqp *EconomicQueryProcessor) validateRequest(req *EconomicQueryRequest) er
 			return fmt.Errorf("invalid query type: %s", req.QueryType)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -303,7 +303,7 @@ func (eqp *EconomicQueryProcessor) processPayment(ctx context.Context, req *Econ
 func (eqp *EconomicQueryProcessor) broadcastEconomicQuery(query *types.EconomicQuery) error {
 	// Convert to regular query for broadcasting
 	regularQuery := &query.Query
-	
+
 	// Add economic metadata
 	if regularQuery.Metadata == nil {
 		regularQuery.Metadata = make(map[string]string)
@@ -346,19 +346,19 @@ func (eqp *EconomicQueryProcessor) calculateQualityScore(response *types.Respons
 	// - Accuracy validation
 	// - User feedback
 	// - Automated quality checks
-	
+
 	qualityScore := 1.0 // Default high quality
-	
+
 	// Simple length-based adjustment
 	if len(response.Text) < 10 {
 		qualityScore *= 0.5 // Very short responses get penalized
 	}
-	
+
 	// Check for error indicators
 	if response.Status == "error" || response.Status == "failed" {
 		qualityScore = 0.0
 	}
-	
+
 	return qualityScore
 }
 
@@ -377,15 +377,15 @@ func (eqp *EconomicQueryProcessor) distributeReward(ctx context.Context, payment
 // handleQueryFailure handles query processing failures
 func (eqp *EconomicQueryProcessor) handleQueryFailure(ctx context.Context, paymentTx *economy.Transaction, query *types.EconomicQuery, err error) (*EconomicQueryResponse, error) {
 	log.Printf("Query %s failed: %v", query.ID, err)
-	
+
 	// Record failure metrics
 	eqp.recordMetrics(query, nil, 0, false)
-	
+
 	// In a real implementation, we might:
 	// 1. Attempt to refund the payment
 	// 2. Try alternative processors
 	// 3. Provide partial credit
-	
+
 	return &EconomicQueryResponse{
 		QueryID:     query.ID,
 		Status:      "failed",
@@ -399,12 +399,12 @@ func (eqp *EconomicQueryProcessor) handleQueryFailure(ctx context.Context, payme
 // handleQualityFailure handles cases where quality doesn't meet requirements
 func (eqp *EconomicQueryProcessor) handleQualityFailure(ctx context.Context, paymentTx *economy.Transaction, query *types.EconomicQuery, qualityScore float64) (*EconomicQueryResponse, error) {
 	log.Printf("Query %s quality %.2f below required %.2f", query.ID, qualityScore, query.MinReputation)
-	
+
 	// In a real implementation, we might:
 	// 1. Try alternative processors
 	// 2. Provide partial refund
 	// 3. Allow user to accept lower quality at reduced price
-	
+
 	return &EconomicQueryResponse{
 		QueryID:      query.ID,
 		Status:       "quality_failure",
@@ -426,7 +426,7 @@ func (eqp *EconomicQueryProcessor) recordMetrics(query *types.EconomicQuery, res
 	defer eqp.Metrics.mu.Unlock()
 
 	eqp.Metrics.QueriesProcessed++
-	
+
 	if duration > 0 {
 		eqp.Metrics.QueryLatencies = append(eqp.Metrics.QueryLatencies, duration)
 		if len(eqp.Metrics.QueryLatencies) > 100 {

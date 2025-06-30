@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -88,6 +89,9 @@ type Message struct {
 	Content string `json:"content"`
 }
 
+// StreamCallback is called for each token/chunk during streaming
+type StreamCallback func(chunk string) error
+
 // AIModel is the interface that all AI models must implement
 type AIModel interface {
 	// GenerateEmbedding generates an embedding for the given text
@@ -104,6 +108,15 @@ type AIModel interface {
 
 	// IsHealthy checks if the model is healthy and available
 	IsHealthy(ctx context.Context) bool
+}
+
+// StreamingAIModel represents an AI model that supports streaming responses
+type StreamingAIModel interface {
+	AIModel
+	// GenerateResponseStream generates a streaming response for the given prompt
+	GenerateResponseStream(ctx context.Context, prompt string, options GenerateOptions, callback StreamCallback) error
+	// GenerateChatResponseStream generates a streaming response for a chat conversation
+	GenerateChatResponseStream(ctx context.Context, messages []Message, options GenerateOptions, callback StreamCallback) error
 }
 
 // ModelManager manages multiple AI models
@@ -548,6 +561,154 @@ func (m *OllamaModel) IsHealthy(ctx context.Context) bool {
 	defer resp.Body.Close()
 
 	return resp.StatusCode == http.StatusOK
+}
+
+// GenerateResponseStream generates a streaming response for the given prompt
+func (m *OllamaModel) GenerateResponseStream(ctx context.Context, prompt string, options GenerateOptions, callback StreamCallback) error {
+	// Convert options to Ollama format
+	ollamaOptions := map[string]interface{}{
+		"temperature": options.Temperature,
+		"top_p":       options.TopP,
+		"num_predict": options.MaxTokens,
+		"stop":        options.Stop,
+	}
+
+	reqBody := ollamaGenerateRequest{
+		Model:   m.ModelName,
+		Prompt:  prompt,
+		Options: ollamaOptions,
+		Stream:  true, // Enable streaming
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("%s/api/generate", m.Config.BaseURL),
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := doWithRetry(m.Client, req, m.Config.RetryConfig)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	// Read streaming response line by line
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		var genResp ollamaGenerateResponse
+		if err := json.Unmarshal([]byte(line), &genResp); err != nil {
+			continue // Skip malformed lines
+		}
+
+		// Call callback with the response chunk
+		if genResp.Response != "" {
+			if err := callback(genResp.Response); err != nil {
+				return err
+			}
+		}
+
+		// If done, break the loop
+		if genResp.Done {
+			break
+		}
+	}
+
+	return scanner.Err()
+}
+
+// GenerateChatResponseStream generates a streaming response for a chat conversation
+func (m *OllamaModel) GenerateChatResponseStream(ctx context.Context, messages []Message, options GenerateOptions, callback StreamCallback) error {
+	// Convert options to Ollama format
+	ollamaOptions := map[string]interface{}{
+		"temperature": options.Temperature,
+		"top_p":       options.TopP,
+		"num_predict": options.MaxTokens,
+		"stop":        options.Stop,
+	}
+
+	reqBody := ollamaGenerateRequest{
+		Model:    m.ModelName,
+		Messages: messages,
+		Options:  ollamaOptions,
+		Stream:   true, // Enable streaming
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		fmt.Sprintf("%s/api/chat", m.Config.BaseURL),
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := doWithRetry(m.Client, req, m.Config.RetryConfig)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	// Read streaming response line by line
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		var genResp ollamaGenerateResponse
+		if err := json.Unmarshal([]byte(line), &genResp); err != nil {
+			continue // Skip malformed lines
+		}
+
+		// Call callback with the response chunk
+		if genResp.Message.Content != "" {
+			if err := callback(genResp.Message.Content); err != nil {
+				return err
+			}
+		}
+
+		// If done, break the loop
+		if genResp.Done {
+			break
+		}
+	}
+
+	return scanner.Err()
 }
 
 // OpenAIConfig contains configuration for OpenAI models

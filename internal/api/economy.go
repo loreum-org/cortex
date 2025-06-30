@@ -89,13 +89,12 @@ func writeErrorResponse(w http.ResponseWriter, status int, message string, err e
 
 // createUserAccountRequest represents the request body for creating a user account
 type createUserAccountRequest struct {
-	ID      string `json:"id"`
 	Address string `json:"address"`
 }
 
 // createUserAccountHandler handles requests to create a new user account
 // @Summary Create a new user account
-// @Description Creates a new user account in the Loreum Network economy.
+// @Description Creates a new user account using the wallet address as the identifier.
 // @Tags Accounts
 // @Accept json
 // @Produce json
@@ -112,14 +111,14 @@ func (s *EconomyService) createUserAccountHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	if req.ID == "" || req.Address == "" {
-		writeErrorResponse(w, http.StatusBadRequest, "ID and Address are required", fmt.Errorf("missing fields"))
+	if req.Address == "" {
+		writeErrorResponse(w, http.StatusBadRequest, "Address is required", fmt.Errorf("missing field"))
 		return
 	}
 
-	account, err := s.Engine.CreateUserAccount(req.ID, req.Address)
+	account, err := s.Engine.CreateUserAccount(req.Address, req.Address)
 	if err != nil {
-		if err.Error() == fmt.Sprintf("account with ID %s already exists", req.ID) {
+		if err.Error() == fmt.Sprintf("account with ID %s already exists", req.Address) {
 			writeErrorResponse(w, http.StatusConflict, "Account already exists", err)
 		} else {
 			writeErrorResponse(w, http.StatusInternalServerError, "Failed to create user account", err)
@@ -160,7 +159,7 @@ func (s *EconomyService) createNodeAccountHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	account, err := s.Engine.CreateNodeAccount(req.ID, req.Address)
+	account, err := s.Engine.CreateNodeAccount(req.ID)
 	if err != nil {
 		if err.Error() == fmt.Sprintf("account with ID %s already exists", req.ID) {
 			writeErrorResponse(w, http.StatusConflict, "Account already exists", err)
@@ -313,21 +312,22 @@ func (s *EconomyService) transferTokensHandler(w http.ResponseWriter, r *http.Re
 
 // stakeTokensRequest represents the request body for staking tokens
 type stakeTokensRequest struct {
-	Amount string `json:"amount"`
+	Account string `json:"account"`
+	Amount  string `json:"amount"`
 }
 
 // stakeTokensHandler handles requests to stake tokens for a node
-// @Summary Stake tokens
-// @Description Stakes tokens for a node.
+// @Summary Stake tokens to node
+// @Description Stakes tokens from an account to a specific node.
 // @Tags Nodes
 // @Accept json
 // @Produce json
 // @Param id path string true "Node ID"
 // @Param stake body stakeTokensRequest true "Stake details"
-// @Success 200 {object} economy.Transaction
+// @Success 200 {object} economy.UserStake
 // @Failure 400 {object} map[string]string "Invalid request payload"
-// @Failure 404 {object} map[string]string "Node not found"
-// @Failure 422 {object} map[string]string "Insufficient balance"
+// @Failure 404 {object} map[string]string "User or node not found"
+// @Failure 422 {object} map[string]string "Insufficient balance or exceeds maximum stake"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /nodes/{id}/stake [post]
 func (s *EconomyService) stakeTokensHandler(w http.ResponseWriter, r *http.Request) {
@@ -340,8 +340,8 @@ func (s *EconomyService) stakeTokensHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if req.Amount == "" {
-		writeErrorResponse(w, http.StatusBadRequest, "Amount is required", fmt.Errorf("missing field"))
+	if req.Account == "" || req.Amount == "" {
+		writeErrorResponse(w, http.StatusBadRequest, "Account and Amount are required", fmt.Errorf("missing fields"))
 		return
 	}
 
@@ -353,20 +353,22 @@ func (s *EconomyService) stakeTokensHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Perform staking
-	tx, err := s.Engine.Stake(nodeID, amount)
+	userStake, err := s.Engine.StakeToNode(req.Account, nodeID, amount)
 	if err != nil {
 		switch err {
 		case economy.ErrAccountNotFound:
-			writeErrorResponse(w, http.StatusNotFound, "Node not found", err)
+			writeErrorResponse(w, http.StatusNotFound, "User or node not found", err)
 		case economy.ErrInsufficientBalance:
 			writeErrorResponse(w, http.StatusUnprocessableEntity, "Insufficient balance", err)
+		case economy.ErrExceedsMaxStake:
+			writeErrorResponse(w, http.StatusUnprocessableEntity, "Exceeds maximum stake per user per node", err)
 		default:
 			writeErrorResponse(w, http.StatusInternalServerError, "Failed to stake tokens", err)
 		}
 		return
 	}
 
-	writeJSONResponse(w, http.StatusOK, tx)
+	writeJSONResponse(w, http.StatusOK, userStake)
 }
 
 // unstakeTokensRequest represents the request body for unstaking tokens
@@ -501,7 +503,7 @@ func (s *EconomyService) calculateQueryPriceHandler(w http.ResponseWriter, r *ht
 
 // processQueryPaymentRequest represents the request body for processing a query payment
 type processQueryPaymentRequest struct {
-	UserID    string `json:"user_id"`
+	Account   string `json:"account"`
 	ModelID   string `json:"model_id"`
 	ModelTier string `json:"model_tier"`
 	QueryType string `json:"query_type"`
@@ -528,15 +530,15 @@ func (s *EconomyService) processQueryPaymentHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if req.UserID == "" || req.ModelID == "" || req.ModelTier == "" || req.QueryType == "" {
-		writeErrorResponse(w, http.StatusBadRequest, "UserID, ModelID, ModelTier, and QueryType are required", fmt.Errorf("missing fields"))
+	if req.Account == "" || req.ModelID == "" || req.ModelTier == "" || req.QueryType == "" {
+		writeErrorResponse(w, http.StatusBadRequest, "Account, ModelID, ModelTier, and QueryType are required", fmt.Errorf("missing fields"))
 		return
 	}
 
 	// Process payment
 	tx, err := s.Engine.ProcessQueryPayment(
 		r.Context(),
-		req.UserID,
+		req.Account,
 		req.ModelID,
 		economy.ModelTier(req.ModelTier),
 		economy.QueryType(req.QueryType),
@@ -802,7 +804,7 @@ func (s *EconomyService) slashNodeHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Slash node
-	tx, err := s.Engine.SlashNode(nodeID, req.Reason, req.Severity)
+	slashEvent, err := s.Engine.SlashNode(nodeID, req.Reason, req.Severity, "")
 	if err != nil {
 		if err == economy.ErrAccountNotFound {
 			writeErrorResponse(w, http.StatusNotFound, "Node not found", err)
@@ -812,7 +814,7 @@ func (s *EconomyService) slashNodeHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	writeJSONResponse(w, http.StatusOK, tx)
+	writeJSONResponse(w, http.StatusOK, slashEvent)
 }
 
 // mintTokensRequest represents the request body for minting tokens

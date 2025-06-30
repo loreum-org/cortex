@@ -201,8 +201,9 @@ show_dashboards() {
   echo -e "\n${BLUE}Dashboard URLs:${NC}"
   for i in $(seq 1 $NUM_NODES); do
     local api_port=$((8080 + i - 1))
-    echo -e "  Node $i: ${CYAN}file://$PWD/web/dashboard.html?port=$api_port${NC}"
+    echo -e "  Node $i: ${CYAN}http://localhost:5173/dashboard?port=$api_port${NC}"
   done
+  echo -e "  Network Overview: ${CYAN}http://localhost:5173/network${NC}"
 }
 
 # Parse command line arguments
@@ -277,12 +278,12 @@ show_dashboards
 echo -e "\n${GREEN}P2P Network is running with $NUM_NODES nodes${NC}"
 echo -e "${YELLOW}Press Ctrl+C to stop all nodes and exit${NC}"
 
-# Create a modified dashboard file for each node
+# Display final dashboard URLs
+echo -e "\n${BLUE}Access the network dashboard:${NC}"
+echo -e "  Network Overview: ${CYAN}http://localhost:5173/network${NC}"
 for i in $(seq 1 $NUM_NODES); do
-  local api_port=$((8080 + i - 1))
-  mkdir -p "$BASE_DIR/node-$i/web"
-  sed "s|http://localhost:8080|http://localhost:$api_port|g" web/dashboard.html > "$BASE_DIR/node-$i/web/dashboard.html"
-  echo -e "Node $i dashboard: file://$BASE_DIR/node-$i/web/dashboard.html"
+  api_port=$((8080 + i - 1))
+  echo -e "  Node $i: ${CYAN}http://localhost:5173/dashboard?port=$api_port${NC}"
 done
 
 # Keep the script running until Ctrl+C

@@ -14,12 +14,13 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/crypto"
-	"github.com/loreum-org/cortex/internal/agenthub"
+	"github.com/loreum-org/cortex/internal/agents"
 	"github.com/loreum-org/cortex/internal/api"
 	"github.com/loreum-org/cortex/internal/consensus"
 	"github.com/loreum-org/cortex/internal/economy"
 	"github.com/loreum-org/cortex/internal/p2p"
 	"github.com/loreum-org/cortex/internal/rag"
+	"github.com/loreum-org/cortex/internal/services"
 	"github.com/loreum-org/cortex/pkg/types"
 	"github.com/spf13/cobra"
 )
@@ -144,23 +145,16 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 		return consensus.ValidateTransaction(tx, pubKey)
 	})
 
-	// Initialize some default reputation scores for demonstration
-	currentNodeID := node.Host.ID().String()
-	cs.ReputationManager.SetScore(currentNodeID, 7.5) // This node starts with good reputation
-	
-	// Add some simulated peer reputation scores for demonstration
-	cs.ReputationManager.SetScore("peer-node-1", 8.2)
-	cs.ReputationManager.SetScore("peer-node-2", 6.8)
-	cs.ReputationManager.SetScore("peer-node-3", 5.4)
-	cs.ReputationManager.SetScore("peer-node-4", 9.1)
-	cs.ReputationManager.SetScore("peer-node-5", 3.2)
+	// Initialize reputation for this node using its libp2p peer ID
+	nodeID := node.Host.ID().String()
+	cs.ReputationManager.SetScore(nodeID, 7.5) // This node starts with good reputation
 
 	// Start processing transactions
 	go cs.ProcessTransactions(ctx)
 
 	// Create a solver agent
-	solverConfig := &agenthub.SolverConfig{
-		PredictorConfig: &agenthub.PredictorConfig{
+	solverConfig := &agents.SolverConfig{
+		PredictorConfig: &agents.PredictorConfig{
 			Timeout:      10 * time.Second,
 			MaxTokens:    1024,
 			Temperature:  0.7,
@@ -168,10 +162,10 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 		},
 		// DefaultModel will be auto-selected by SolverAgent
 	}
-	solverAgent := agenthub.NewSolverAgent(solverConfig)
+	solverAgent := agents.NewSolverAgent(solverConfig)
 
-	// Create a RAG system
-	ragSystem := rag.NewRAGSystem(384) // 384 dimensions for the vector space
+	// Create a RAG system with the actual node ID for context tracking
+	ragSystem := rag.NewRAGSystemWithNodeID(384, nodeID) // 384 dimensions for the vector space
 
 	// Initialize the Economic Engine
 	economicEngine := economy.NewEconomicEngine()
@@ -181,7 +175,7 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 	// In production, this would use actual SQL and Redis configurations
 	sqlConfig := types.NewStorageConfig("mysql")
 	redisConfig := types.NewStorageConfig("redis")
-	
+
 	// For demo purposes, we'll continue without storage if databases aren't available
 	// economicStorage, err := storage.NewEconomicStorage(sqlConfig, redisConfig)
 	// if err != nil {
@@ -191,7 +185,7 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 	//     economicEngine.SetStorage(economicStorage)
 	//     log.Println("Economic storage initialized and connected.")
 	// }
-	log.Printf("Economic storage config prepared (SQL: %s:%d, Redis: %s:%d)", 
+	log.Printf("Economic storage config prepared (SQL: %s:%d, Redis: %s:%d)",
 		sqlConfig.Host, sqlConfig.Port, redisConfig.Host, redisConfig.Port)
 
 	// Create economic consensus bridge
@@ -227,11 +221,11 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 		log.Printf("Default user account created: %s with address %s", userAccount.ID, userAccount.Address)
 	}
 
-	defaultNodeID := "node-1"
-	defaultNodeAddress := "0xNode1Address"
-	nodeAccount, err := economicEngine.CreateNodeAccount(defaultNodeID, defaultNodeAddress)
+	// Use the actual libp2p peer ID for the node account
+	nodePeerID := node.Host.ID().String()
+	nodeAccount, err := economicEngine.CreateNodeAccount(nodePeerID)
 	if err != nil {
-		log.Printf("Warning: Failed to create default node account: %v", err)
+		log.Printf("Warning: Failed to create node account: %v", err)
 	} else {
 		log.Printf("Default node account created: %s with address %s", nodeAccount.ID, nodeAccount.Address)
 	}
@@ -250,11 +244,39 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 
 	// Connect solver agent with economic engine for query result tracking
 	solverAgent.SetEconomicEngine(economicEngine)
-	solverAgent.SetNodeID(currentNodeID)
+	solverAgent.SetNodeID(nodePeerID)
 	log.Println("Connected solver agent with economic engine for query result tracking.")
 
+	// Initialize AGI blockchain recorder
+	agiRecorder := consensus.NewAGIRecorder(cs, nodeID)
+	cs.AGIRecorder = agiRecorder
+
+	// Start AGI recorder
+	if err := agiRecorder.Start(ctx); err != nil {
+		log.Printf("Warning: Failed to start AGI recorder: %v", err)
+	} else {
+		log.Println("AGI blockchain recorder started.")
+	}
+
+	// Connect AGI system with blockchain recorder
+	if ragSystem.ContextManager != nil {
+		agiSystem := ragSystem.ContextManager.GetAGISystem()
+		if agiSystem != nil {
+			agiSystem.SetAGIRecorder(agiRecorder)
+			log.Println("Connected AGI system with blockchain recorder.")
+		}
+	}
+
+	// Connect solver agent with RAG system for context tracking
+	solverAgent.SetRAGSystem(ragSystem)
+	log.Println("Connected solver agent with RAG system for persistent context tracking.")
+
+	// Create service registry manager
+	serviceRegistry := services.NewServiceRegistryManager(nodePeerID, cs, node)
+	log.Printf("Service registry manager initialized for node %s", nodePeerID[:12]+"...")
+
 	// Create an API server
-	server := api.NewServer(node, cs, solverAgent, ragSystem, economicEngine)
+	server := api.NewServer(node, cs, solverAgent, ragSystem, economicEngine, serviceRegistry)
 
 	// Connect EconomicQueryProcessor with the consensus bridge
 	if server.EconomicQueryProc != nil {
@@ -322,7 +344,7 @@ func runTests() {
 	testConsensus(ctx)
 
 	// Test agent hub
-	testAgentHub(ctx)
+	testAgents(ctx)
 
 	// Test RAG
 	testRAG(ctx)
@@ -394,10 +416,10 @@ func testConsensus(ctx context.Context) {
 	}
 }
 
-func testAgentHub(ctx context.Context) {
+func testAgents(ctx context.Context) {
 	// Create a solver agent
-	solverConfig := &agenthub.SolverConfig{
-		PredictorConfig: &agenthub.PredictorConfig{
+	solverConfig := &agents.SolverConfig{
+		PredictorConfig: &agents.PredictorConfig{
 			Timeout:      10 * time.Second,
 			MaxTokens:    1024,
 			Temperature:  0.7,
@@ -405,7 +427,7 @@ func testAgentHub(ctx context.Context) {
 		},
 		DefaultModel: "default",
 	}
-	solverAgent := agenthub.NewSolverAgent(solverConfig)
+	solverAgent := agents.NewSolverAgent(solverConfig)
 
 	// Create a query
 	query := &types.Query{

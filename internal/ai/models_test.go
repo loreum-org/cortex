@@ -370,7 +370,7 @@ func TestDoWithRetry(t *testing.T) {
 	t.Run("FailureContextCancelledBetweenRetries", func(t *testing.T) {
 		client := &mockHTTPClient{}
 		ctx, cancel := context.WithCancel(context.Background())
-		
+
 		client.DoFunc = func(req *http.Request) (*http.Response, error) {
 			callCount := client.GetCallCount()
 			if callCount == 1 {
@@ -388,7 +388,7 @@ func TestDoWithRetry(t *testing.T) {
 		}
 
 		req := createTestRequest(ctx)
-		
+
 		// Cancel the context immediately after starting the retry process
 		go func() {
 			time.Sleep(testRetryConfig.InitialWait / 4) // Cancel very early in the retry sleep
@@ -397,13 +397,13 @@ func TestDoWithRetry(t *testing.T) {
 
 		_, err := ai.DoWithRetryTesting(client, req, testRetryConfig)
 		require.Error(t, err)
-		
+
 		// The context cancellation should be detected either:
 		// 1. During the next client.Do call (via context check in DoFunc)
 		// 2. Or after the call when doWithRetry checks context
-		assert.True(t, errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "context canceled"), 
+		assert.True(t, errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "context canceled"),
 			"Error should be context.Canceled or indicate it, got: %v", err)
-		
+
 		// We expect 1 or 2 calls depending on timing - 1 initial call, maybe 1 retry before cancellation is detected
 		callCount := client.GetCallCount()
 		assert.True(t, callCount <= 2, "Should not exceed 2 calls before cancellation, got: %d", callCount)

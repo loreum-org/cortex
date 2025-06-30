@@ -25,7 +25,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/multiformats/go-multiaddr"
 
-	"github.com/loreum-org/cortex/internal/agenthub"
+	"github.com/loreum-org/cortex/internal/agents"
 	"github.com/loreum-org/cortex/internal/consensus"
 	"github.com/loreum-org/cortex/internal/economy"
 	"github.com/loreum-org/cortex/internal/p2p"
@@ -90,7 +90,7 @@ func setupAPITestServer(t *testing.T, enableEconomicEngine bool) (*httptest.Serv
 		s = NewServer(
 			p2pNodeInstance,
 			(*consensus.ConsensusService)(mockConsensusService), // Casting mock to the expected concrete type pointer
-			(*agenthub.SolverAgent)(mockSolverAgent),
+			(*agents.SolverAgent)(mockSolverAgent),
 			(*rag.RAGSystem)(mockRAGSystem),
 			(*economy.EconomicEngine)(mockEconomicEngine),
 		)
@@ -98,7 +98,7 @@ func setupAPITestServer(t *testing.T, enableEconomicEngine bool) (*httptest.Serv
 		s = NewServer(
 			p2pNodeInstance,
 			(*consensus.ConsensusService)(mockConsensusService),
-			(*agenthub.SolverAgent)(mockSolverAgent),
+			(*agents.SolverAgent)(mockSolverAgent),
 			(*rag.RAGSystem)(mockRAGSystem),
 			nil, // No economic engine
 		)
@@ -270,7 +270,7 @@ func TestSubmitQueryHandler(t *testing.T) {
 		server, s, mockP2P, mockSolver, _, _, _ := setupAPITestServer(t, false)
 		defer server.Close()
 		s.P2PNode = (*p2p.P2PNode)(mockP2P)                 // Ensure server uses the mock P2P
-		s.SolverAgent = (*agenthub.SolverAgent)(mockSolver) // Ensure server uses the mock Solver
+		s.SolverAgent = (*agents.SolverAgent)(mockSolver) // Ensure server uses the mock Solver
 
 		mockSolver.ProcessFunc = func(ctx context.Context, query *types.Query) (*types.Response, error) {
 			return &types.Response{QueryID: query.ID, Text: "Solver processed: " + query.Text, Status: "success"}, nil
@@ -305,7 +305,7 @@ func TestSubmitQueryHandler(t *testing.T) {
 		server, s, mockP2P, mockSolver, _, mockEco, _ := setupAPITestServer(t, true)
 		defer server.Close()
 		s.P2PNode = (*p2p.P2PNode)(mockP2P)
-		s.SolverAgent = (*agenthub.SolverAgent)(mockSolver)
+		s.SolverAgent = (*agents.SolverAgent)(mockSolver)
 		s.EconomicEngine = (*economy.EconomicEngine)(mockEco)
 
 		mockSolver.ProcessFunc = func(ctx context.Context, query *types.Query) (*types.Response, error) {
@@ -352,7 +352,7 @@ func TestSubmitQueryHandler(t *testing.T) {
 		server, s, mockP2P, mockSolver, _, mockEco, _ := setupAPITestServer(t, true)
 		defer server.Close()
 		s.P2PNode = (*p2p.P2PNode)(mockP2P)
-		s.SolverAgent = (*agenthub.SolverAgent)(mockSolver)
+		s.SolverAgent = (*agents.SolverAgent)(mockSolver)
 		s.EconomicEngine = (*economy.EconomicEngine)(mockEco)
 
 		mockSolver.ProcessFunc = func(ctx context.Context, query *types.Query) (*types.Response, error) {
@@ -390,7 +390,7 @@ func TestSubmitQueryHandler(t *testing.T) {
 		server, s, mockP2P, mockSolver, _, _, _ := setupAPITestServer(t, false)
 		defer server.Close()
 		s.P2PNode = (*p2p.P2PNode)(mockP2P)
-		s.SolverAgent = (*agenthub.SolverAgent)(mockSolver)
+		s.SolverAgent = (*agents.SolverAgent)(mockSolver)
 
 		mockSolver.ProcessFunc = func(ctx context.Context, query *types.Query) (*types.Response, error) {
 			return nil, errors.New("solver failed")

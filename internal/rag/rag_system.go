@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/loreum-org/cortex/internal/ai"
 	"github.com/loreum-org/cortex/pkg/types"
@@ -14,11 +15,13 @@ import (
 
 // RAGSystem represents the Retrieval-Augmented Generation system
 type RAGSystem struct {
-	VectorDB       *VectorStorage
-	QueryProcessor *QueryProcessor
-	ModelManager   *ai.ModelManager
-	ContextBuilder *ContextBuilder
-	DefaultOptions ai.GenerateOptions
+	VectorDB         *VectorStorage
+	QueryProcessor   *QueryProcessor
+	ModelManager     *ai.ModelManager
+	EmbeddedManager  *ai.EmbeddedModelManager  // Reference to embedded Ollama manager
+	ContextBuilder   *ContextBuilder
+	ContextManager   *ContextManager
+	DefaultOptions   ai.GenerateOptions
 }
 
 // QueryProcessor processes queries for the RAG system
@@ -33,35 +36,109 @@ type ContextBuilder struct {
 
 // NewRAGSystem creates a new RAG system
 func NewRAGSystem(dimensions int) *RAGSystem {
-	// Create a new model manager
-	modelManager := ai.NewModelManager()
+	return NewRAGSystemWithNodeID(dimensions, "default-node")
+}
 
-	// Register a mock model by default
+// NewRAGSystemWithNodeID creates a new RAG system with a specific node ID
+func NewRAGSystemWithNodeID(dimensions int, nodeID string) *RAGSystem {
+	// Create an embedded model manager with Ollama lifecycle management
+	embeddedConfig := ai.DefaultEmbeddedManagerConfig()
+	embeddedConfig.AutoModels = []string{"cogito", "llama2", "nomic-embed-text"}
+	
+	embeddedManager := ai.NewEmbeddedModelManager(embeddedConfig)
+	
+	// Will be set up after RAG system creation
+	var ragSystemRef *RAGSystem
+	
+	// Set up callback to update consciousness default model when ready
+	embeddedManager.OnDefaultModelReady = func(modelID string) {
+		if ragSystemRef != nil && ragSystemRef.ContextManager != nil {
+			log.Printf("Updating consciousness runtime to use embedded model: %s", modelID)
+			ragSystemRef.ContextManager.SetModelManager(embeddedManager.ModelManager, modelID)
+		}
+	}
+	
+	// Start embedded Ollama (non-blocking)
+	go func() {
+		ctx := context.Background()
+		if err := embeddedManager.Start(ctx); err != nil {
+			log.Printf("Failed to start embedded Ollama: %v", err)
+			// Continue with fallback models
+		}
+	}()
+
+	// Register a mock model by default (fallback)
 	mockModel := ai.NewMockModel("default", dimensions)
-	modelManager.RegisterModel(mockModel)
+	embeddedManager.RegisterModel(mockModel)
 
-	// Try to register Ollama models if available
-	if err := tryRegisterOllamaModels(modelManager); err != nil {
-		log.Printf("Warning: Failed to register Ollama models: %v", err)
+	// Try to register external Ollama models as additional fallback
+	if err := tryRegisterOllamaModels(embeddedManager.ModelManager); err != nil {
+		log.Printf("Warning: Failed to register external Ollama models: %v", err)
 	}
 
 	// Try to register OpenAI models if API key is available
-	if err := tryRegisterOpenAIModels(modelManager); err != nil {
+	if err := tryRegisterOpenAIModels(embeddedManager.ModelManager); err != nil {
 		log.Printf("Warning: Failed to register OpenAI models: %v", err)
 	}
 
 	// Create the RAG system
-	return &RAGSystem{
+	ragSystem := &RAGSystem{
 		VectorDB: NewVectorStorage(dimensions),
 		QueryProcessor: &QueryProcessor{
 			ModelID: "default",
 		},
-		ModelManager: modelManager,
+		ModelManager:    embeddedManager.ModelManager,
+		EmbeddedManager: embeddedManager,
 		ContextBuilder: &ContextBuilder{
 			MaxContextLength: 4096,
 		},
 		DefaultOptions: ai.DefaultGenerateOptions(),
 	}
+	
+	// Create and assign the context manager
+	ragSystem.ContextManager = NewContextManager(ragSystem, nodeID)
+	
+	// Set up the reference for callback
+	ragSystemRef = ragSystem
+	
+	return ragSystem
+}
+
+// Shutdown gracefully shuts down the RAG system
+func (r *RAGSystem) Shutdown() error {
+	log.Printf("Shutting down RAG system...")
+	
+	var shutdownErr error
+	
+	// Stop embedded Ollama if running
+	if r.EmbeddedManager != nil {
+		if err := r.EmbeddedManager.Stop(); err != nil {
+			log.Printf("Error stopping embedded Ollama: %v", err)
+			shutdownErr = err
+		}
+	}
+	
+	log.Printf("RAG system shutdown complete")
+	return shutdownErr
+}
+
+// GetEmbeddedStatus returns the status of embedded Ollama
+func (r *RAGSystem) GetEmbeddedStatus() map[string]interface{} {
+	if r.EmbeddedManager != nil {
+		return r.EmbeddedManager.GetEmbeddedStatus()
+	}
+	return map[string]interface{}{
+		"enabled": false,
+		"message": "Embedded Ollama not available",
+	}
+}
+
+// RestartEmbeddedOllama restarts the embedded Ollama server
+func (r *RAGSystem) RestartEmbeddedOllama(ctx context.Context) error {
+	if r.EmbeddedManager != nil {
+		return r.EmbeddedManager.RestartOllama(ctx)
+	}
+	return fmt.Errorf("embedded Ollama not available")
 }
 
 // tryRegisterOllamaModels attempts to register Ollama models if available
@@ -138,13 +215,51 @@ func (r *RAGSystem) ListAvailableModels() []ai.ModelInfo {
 
 // Query performs a RAG query
 func (r *RAGSystem) Query(ctx context.Context, text string) (string, error) {
+	return r.QueryWithContext(ctx, text, true, 5)
+}
+
+// QueryWithContext performs a RAG query with optional conversation context
+func (r *RAGSystem) QueryWithContext(ctx context.Context, text string, useConversationContext bool, contextHistoryCount int) (string, error) {
+	startTime := time.Now()
+	
+	// Track the query
+	eventID := r.ContextManager.TrackQuery(ctx, text, "rag", map[string]interface{}{
+		"use_conversation_context": useConversationContext,
+		"context_history_count":    contextHistoryCount,
+	})
+	
+	var response string
+	var err error
+	
+	defer func() {
+		// Track the response
+		duration := time.Since(startTime)
+		success := err == nil
+		errorMsg := ""
+		if err != nil {
+			errorMsg = err.Error()
+		}
+		r.ContextManager.TrackResponse(ctx, eventID, response, duration, success, errorMsg)
+	}()
+	
+	// Build contextual prompt if requested
+	queryText := text
+	if useConversationContext && contextHistoryCount > 0 {
+		contextualPrompt, contextErr := r.ContextManager.GetContextualPrompt(ctx, text, contextHistoryCount)
+		if contextErr != nil {
+			log.Printf("Error getting contextual prompt: %v", contextErr)
+		} else {
+			queryText = contextualPrompt
+		}
+	}
+	
 	// Get the model
 	model, err := r.ModelManager.GetModel(r.QueryProcessor.ModelID)
 	if err != nil {
 		return "", fmt.Errorf("query failed: %w", err)
 	}
 
-	// Generate an embedding for the query
+	// Generate an embedding for the query (use original text for document search)
 	embedding, err := model.GenerateEmbedding(ctx, text)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate embedding: %w", err)
@@ -163,15 +278,15 @@ func (r *RAGSystem) Query(ctx context.Context, text string) (string, error) {
 	}
 
 	// Build context from retrieved documents
-	context := r.buildContext(docs)
+	documentContext := r.buildContext(docs)
 
-	// Generate response with context
-	prompt := r.buildPrompt(text, context)
+	// Generate response with context (use contextual prompt if available)
+	prompt := r.buildPrompt(queryText, documentContext)
 
 	// Use the default options for generation
 	options := r.DefaultOptions
 
-	response, err := model.GenerateResponse(ctx, prompt, options)
+	response, err = model.GenerateResponse(ctx, prompt, options)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate response: %w", err)
 	}

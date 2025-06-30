@@ -19,20 +19,29 @@ import (
 
 // Topic names for the Cortex network
 const (
-	TopicQueries = "cortex/queries"
-	TopicEvents  = "cortex/events"
-	TopicResults = "cortex/results"
-	TopicStatus  = "cortex/status"
+	TopicQueries      = "cortex/queries"
+	TopicEvents       = "cortex/events"
+	TopicResults      = "cortex/results"
+	TopicStatus       = "cortex/status"
+	TopicEconomic     = "cortex/economic"
+	TopicPayments     = "cortex/payments"
+	TopicRewards      = "cortex/rewards"
+	TopicStakeUpdates = "cortex/stake"
 )
 
 // MessageType defines the type of message being sent
 type MessageType string
 
 const (
-	MessageTypeQuery  MessageType = "query"
-	MessageTypeResult MessageType = "result"
-	MessageTypeEvent  MessageType = "event"
-	MessageTypeStatus MessageType = "status"
+	MessageTypeQuery         MessageType = "query"
+	MessageTypeResult        MessageType = "result"
+	MessageTypeEvent         MessageType = "event"
+	MessageTypeStatus        MessageType = "status"
+	MessageTypePayment       MessageType = "payment"
+	MessageTypeReward        MessageType = "reward"
+	MessageTypeStakeUpdate   MessageType = "stake_update"
+	MessageTypeBalanceUpdate MessageType = "balance_update"
+	MessageTypeEconomicSync  MessageType = "economic_sync"
 )
 
 // NetworkMessage represents a message sent over the P2P network
@@ -51,6 +60,62 @@ type QueryBroadcast struct {
 	Type      string            `json:"type"`
 	Metadata  map[string]string `json:"metadata,omitempty"`
 	Timestamp int64             `json:"timestamp"`
+}
+
+// PaymentBroadcast represents a payment transaction broadcast
+type PaymentBroadcast struct {
+	TransactionID string `json:"transaction_id"`
+	FromAccount   string `json:"from_account"`
+	ToAccount     string `json:"to_account"`
+	Amount        string `json:"amount"`
+	Fee           string `json:"fee"`
+	ModelTier     string `json:"model_tier,omitempty"`
+	QueryType     string `json:"query_type,omitempty"`
+	Timestamp     int64  `json:"timestamp"`
+}
+
+// RewardBroadcast represents a reward distribution broadcast
+type RewardBroadcast struct {
+	TransactionID   string  `json:"transaction_id"`
+	PaymentTxID     string  `json:"payment_tx_id"`
+	NodeID          string  `json:"node_id"`
+	Amount          string  `json:"amount"`
+	ResponseTime    int64   `json:"response_time_ms"`
+	QualityScore    float64 `json:"quality_score"`
+	Success         bool    `json:"success"`
+	ReputationDelta float64 `json:"reputation_delta"`
+	Timestamp       int64   `json:"timestamp"`
+}
+
+// StakeUpdateBroadcast represents a stake change broadcast
+type StakeUpdateBroadcast struct {
+	NodeID        string `json:"node_id"`
+	Amount        string `json:"amount"`
+	Operation     string `json:"operation"` // "stake" or "unstake"
+	TransactionID string `json:"transaction_id"`
+	TotalStake    string `json:"total_stake"`
+	Timestamp     int64  `json:"timestamp"`
+}
+
+// BalanceUpdateBroadcast represents a balance change broadcast
+type BalanceUpdateBroadcast struct {
+	AccountID     string `json:"account_id"`
+	NewBalance    string `json:"new_balance"`
+	ChangeAmount  string `json:"change_amount"`
+	ChangeType    string `json:"change_type"` // "credit" or "debit"
+	TransactionID string `json:"transaction_id"`
+	Timestamp     int64  `json:"timestamp"`
+}
+
+// EconomicSyncMessage represents economic state synchronization
+type EconomicSyncMessage struct {
+	SenderID       string                 `json:"sender_id"`
+	EconomicHeight int64                  `json:"economic_height"`
+	StateHash      string                 `json:"state_hash"`
+	NodeBalances   map[string]string      `json:"node_balances,omitempty"`
+	NodeStakes     map[string]string      `json:"node_stakes,omitempty"`
+	NodeMetrics    map[string]interface{} `json:"node_metrics,omitempty"`
+	Timestamp      int64                  `json:"timestamp"`
 }
 
 // NetworkStats tracks statistics about the P2P network
@@ -193,7 +258,10 @@ func (n *P2PNode) Start(ctx context.Context) error {
 	}
 
 	// Join standard topics
-	standardTopics := []string{TopicQueries, TopicEvents, TopicResults, TopicStatus}
+	standardTopics := []string{
+		TopicQueries, TopicEvents, TopicResults, TopicStatus,
+		TopicEconomic, TopicPayments, TopicRewards, TopicStakeUpdates,
+	}
 	for _, topicName := range standardTopics {
 		_, err := n.JoinTopic(topicName)
 		if err != nil {
@@ -301,6 +369,106 @@ func (n *P2PNode) BroadcastEvent(eventType string, data map[string]any) error {
 
 	// Publish the message to the events topic
 	return n.Publish(TopicEvents, jsonData)
+}
+
+// BroadcastPayment broadcasts a payment transaction to the network
+func (n *P2PNode) BroadcastPayment(payment *PaymentBroadcast) error {
+	// Create a network message
+	msg := NetworkMessage{
+		Type:      MessageTypePayment,
+		SenderID:  n.Host.ID().String(),
+		Timestamp: time.Now().Unix(),
+		Payload:   map[string]any{"payment": payment},
+	}
+
+	// Marshal the message to JSON
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	// Publish the message to the payments topic
+	return n.Publish(TopicPayments, data)
+}
+
+// BroadcastReward broadcasts a reward distribution to the network
+func (n *P2PNode) BroadcastReward(reward *RewardBroadcast) error {
+	// Create a network message
+	msg := NetworkMessage{
+		Type:      MessageTypeReward,
+		SenderID:  n.Host.ID().String(),
+		Timestamp: time.Now().Unix(),
+		Payload:   map[string]any{"reward": reward},
+	}
+
+	// Marshal the message to JSON
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	// Publish the message to the rewards topic
+	return n.Publish(TopicRewards, data)
+}
+
+// BroadcastStakeUpdate broadcasts a stake update to the network
+func (n *P2PNode) BroadcastStakeUpdate(stakeUpdate *StakeUpdateBroadcast) error {
+	// Create a network message
+	msg := NetworkMessage{
+		Type:      MessageTypeStakeUpdate,
+		SenderID:  n.Host.ID().String(),
+		Timestamp: time.Now().Unix(),
+		Payload:   map[string]any{"stake_update": stakeUpdate},
+	}
+
+	// Marshal the message to JSON
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	// Publish the message to the stake updates topic
+	return n.Publish(TopicStakeUpdates, data)
+}
+
+// BroadcastBalanceUpdate broadcasts a balance update to the network
+func (n *P2PNode) BroadcastBalanceUpdate(balanceUpdate *BalanceUpdateBroadcast) error {
+	// Create a network message
+	msg := NetworkMessage{
+		Type:      MessageTypeBalanceUpdate,
+		SenderID:  n.Host.ID().String(),
+		Timestamp: time.Now().Unix(),
+		Payload:   map[string]any{"balance_update": balanceUpdate},
+	}
+
+	// Marshal the message to JSON
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	// Publish the message to the economic topic
+	return n.Publish(TopicEconomic, data)
+}
+
+// BroadcastEconomicSync broadcasts economic state synchronization to the network
+func (n *P2PNode) BroadcastEconomicSync(syncMsg *EconomicSyncMessage) error {
+	// Create a network message
+	msg := NetworkMessage{
+		Type:      MessageTypeEconomicSync,
+		SenderID:  n.Host.ID().String(),
+		Timestamp: time.Now().Unix(),
+		Payload:   map[string]any{"economic_sync": syncMsg},
+	}
+
+	// Marshal the message to JSON
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	// Publish the message to the economic topic
+	return n.Publish(TopicEconomic, data)
 }
 
 // RegisterMessageHandler registers a handler for a specific message type
@@ -447,4 +615,39 @@ func (n *P2PNode) WaitForPeers(ctx context.Context, minPeers int) error {
 			time.Sleep(time.Second)
 		}
 	}
+}
+// Broadcast sends data to a specific topic (generic interface)
+func (n *P2PNode) Broadcast(topic string, data []byte) error {
+	return n.Publish(topic, data)
+}
+
+// Subscribe subscribes to a topic with a handler (generic interface)
+func (n *P2PNode) Subscribe(topic string, handler func([]byte)) error {
+	subscription, err := n.JoinTopic(topic)
+	if err != nil {
+		return err
+	}
+	
+	go func() {
+		for {
+			msg, err := subscription.Next(context.Background())
+			if err != nil {
+				log.Printf("Error reading from subscription: %v", err)
+				break
+			}
+			handler(msg.Data)
+		}
+	}()
+	
+	return nil
+}
+
+// GetConnectedPeers returns list of connected peer IDs
+func (n *P2PNode) GetConnectedPeers() []string {
+	peers := n.Host.Network().Peers()
+	peerStrs := make([]string, len(peers))
+	for i, peer := range peers {
+		peerStrs[i] = peer.String()
+	}
+	return peerStrs
 }

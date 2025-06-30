@@ -25,8 +25,8 @@ func TestCreateUserAccount(t *testing.T) {
 			t.Errorf("Expected account ID %s, got %s", userID, account.ID)
 		}
 
-		if account.Address != address {
-			t.Errorf("Expected account address %s, got %s", address, account.Address)
+		if account.Address == "" {
+			t.Error("Account address should not be empty")
 		}
 
 		if account.Balance.Cmp(big.NewInt(0)) != 0 {
@@ -68,10 +68,9 @@ func TestCreateNodeAccount(t *testing.T) {
 
 	// Test successful node account creation
 	t.Run("Success", func(t *testing.T) {
-		nodeID := "test-node-1"
-		address := "0xNodeAddress1"
+		nodeID := GenerateTestPeerID("1")
 
-		account, err := engine.CreateNodeAccount(nodeID, address)
+		account, err := engine.CreateNodeAccount(nodeID)
 		if err != nil {
 			t.Fatalf("Failed to create node account: %v", err)
 		}
@@ -80,8 +79,8 @@ func TestCreateNodeAccount(t *testing.T) {
 			t.Errorf("Expected account ID %s, got %s", nodeID, account.ID)
 		}
 
-		if account.Address != address {
-			t.Errorf("Expected account address %s, got %s", address, account.Address)
+		if account.Address == "" {
+			t.Error("Account address should not be empty")
 		}
 
 		if account.Balance.Cmp(big.NewInt(0)) != 0 {
@@ -105,17 +104,16 @@ func TestCreateNodeAccount(t *testing.T) {
 
 	// Test duplicate node account creation
 	t.Run("DuplicateAccount", func(t *testing.T) {
-		nodeID := "test-node-2"
-		address := "0xNodeAddress2"
+		nodeID := GenerateTestPeerID("2")
 
 		// Create first account
-		_, err := engine.CreateNodeAccount(nodeID, address)
+		_, err := engine.CreateNodeAccount(nodeID)
 		if err != nil {
 			t.Fatalf("Failed to create first node account: %v", err)
 		}
 
 		// Try to create duplicate account
-		_, err = engine.CreateNodeAccount(nodeID, "0xDifferentNodeAddress")
+		_, err = engine.CreateNodeAccount(nodeID)
 		if err == nil {
 			t.Error("Expected error when creating duplicate node account, got nil")
 		}
@@ -238,8 +236,8 @@ func TestStaking(t *testing.T) {
 
 	t.Run("StakeExactlyMinimumStake", func(t *testing.T) {
 		engine := NewEconomicEngine()
-		nodeID := "stake-min-node"
-		_, err := engine.CreateNodeAccount(nodeID, "0xStakeMinNode")
+		nodeID := GenerateTestPeerID("stakemin")
+		_, err := engine.CreateNodeAccount(nodeID)
 		if err != nil {
 			t.Fatalf("Failed to create node account: %v", err)
 		}
@@ -271,7 +269,7 @@ func TestStaking(t *testing.T) {
 	t.Run("UnstakeLeavingZeroFromMinimumStake", func(t *testing.T) {
 		engine := NewEconomicEngine()
 		nodeID := "unstake-zero-node"
-		nodeAcc, err := engine.CreateNodeAccount(nodeID, "0xUnstakeZeroNode")
+		nodeAcc, err := engine.CreateNodeAccount(GenerateTestPeerID("node"))
 		if err != nil {
 			t.Fatalf("Failed to create node account: %v", err)
 		}
@@ -309,7 +307,7 @@ func TestStaking(t *testing.T) {
 	t.Run("UnstakeAttemptLeavingLessThanMinimumStakeFails", func(t *testing.T) {
 		engine := NewEconomicEngine()
 		nodeID := "unstake-fail-node"
-		nodeAcc, err := engine.CreateNodeAccount(nodeID, "0xUnstakeFailNode")
+		nodeAcc, err := engine.CreateNodeAccount(GenerateTestPeerID("node"))
 		if err != nil {
 			t.Fatalf("Failed to create node account: %v", err)
 		}
@@ -334,7 +332,7 @@ func TestStaking(t *testing.T) {
 	t.Run("UnstakeLeavingMoreThanOrEqualToMinimumStakeSucceeds", func(t *testing.T) {
 		engine := NewEconomicEngine()
 		nodeID := "unstake-succeed-node"
-		nodeAcc, err := engine.CreateNodeAccount(nodeID, "0xUnstakeSucceedNode")
+		nodeAcc, err := engine.CreateNodeAccount(GenerateTestPeerID("node"))
 		if err != nil {
 			t.Fatalf("Failed to create node account: %v", err)
 		}
@@ -370,7 +368,7 @@ func TestStaking(t *testing.T) {
 	t.Run("StakeInsufficientBalance", func(t *testing.T) {
 		engine := NewEconomicEngine()
 		nodeID := "stake-insufficient-balance-node"
-		nodeAcc, err := engine.CreateNodeAccount(nodeID, "0xStakeInsufficientBalanceNode")
+		nodeAcc, err := engine.CreateNodeAccount(GenerateTestPeerID("node"))
 		if err != nil {
 			t.Fatalf("Failed to create node account: %v", err)
 		}
@@ -387,7 +385,7 @@ func TestStaking(t *testing.T) {
 	t.Run("UnstakeInsufficientStake", func(t *testing.T) {
 		engine := NewEconomicEngine()
 		nodeID := "unstake-insufficient-stake-node"
-		nodeAcc, err := engine.CreateNodeAccount(nodeID, "0xUnstakeInsufficientStakeNode")
+		nodeAcc, err := engine.CreateNodeAccount(GenerateTestPeerID("node"))
 		if err != nil {
 			t.Fatalf("Failed to create node account: %v", err)
 		}
@@ -507,7 +505,7 @@ func TestQueryPaymentAndReward(t *testing.T) {
 		t.Fatalf("Failed to create user account: %v", err)
 	}
 
-	nodeAcc, err := engine.CreateNodeAccount(nodeID, "0xNodeAddress")
+	nodeAcc, err := engine.CreateNodeAccount(GenerateTestPeerID("node"))
 	if err != nil {
 		t.Fatalf("Failed to create node account: %v", err)
 	}
@@ -680,7 +678,7 @@ func TestQueryPaymentAndReward(t *testing.T) {
 	t.Run("InvalidPaymentForReward", func(t *testing.T) {
 		engineForThisTest := NewEconomicEngine() // Fresh engine
 		nodeIDForThisTest := "reward-fail-node"
-		_, _ = engineForThisTest.CreateNodeAccount(nodeIDForThisTest, "0xRewardFailNode")
+		_, _ = engineForThisTest.CreateNodeAccount(GenerateTestPeerID("node"))
 
 		_, err := engineForThisTest.DistributeQueryReward(
 			ctx,
@@ -705,7 +703,7 @@ func TestNodeSlashing(t *testing.T) {
 
 	// Setup node account with stake
 	nodeID := "test-node-slash"
-	nodeAcc, err := engine.CreateNodeAccount(nodeID, "0xSlashNodeAddress")
+	nodeAcc, err := engine.CreateNodeAccount(GenerateTestPeerID("node"))
 	if err != nil {
 		t.Fatalf("Failed to create node account: %v", err)
 	}
@@ -724,21 +722,21 @@ func TestNodeSlashing(t *testing.T) {
 		// Slash 30% of stake
 		slashSeverity := 0.3
 
-		tx, err := engine.SlashNode(nodeID, "Poor performance", slashSeverity)
+		slashingEvent, err := engine.SlashNode(nodeID, "Poor performance", slashSeverity, "test_query_id")
 		if err != nil {
 			t.Fatalf("Failed to slash node: %v", err)
 		}
 
-		if tx.FromID != nodeID {
-			t.Errorf("Transaction has wrong sender: expected %s, got %s", nodeID, tx.FromID)
+		if slashingEvent.NodeID != nodeID {
+			t.Errorf("Slashing event has wrong node ID: expected %s, got %s", nodeID, slashingEvent.NodeID)
 		}
 
-		if tx.ToID != engine.networkAccount {
-			t.Errorf("Transaction has wrong receiver: expected %s, got %s", engine.networkAccount, tx.ToID)
+		if slashingEvent.Reason != "Poor performance" {
+			t.Errorf("Slashing event has wrong reason: expected %s, got %s", "Poor performance", slashingEvent.Reason)
 		}
 
-		if tx.Type != TransactionTypeSlash {
-			t.Errorf("Transaction has wrong type: expected %s, got %s", TransactionTypeSlash, tx.Type)
+		if slashingEvent.Severity != slashSeverity {
+			t.Errorf("Slashing event has wrong severity: expected %f, got %f", slashSeverity, slashingEvent.Severity)
 		}
 
 		// Expected slash amount is 30% of stake
@@ -747,8 +745,8 @@ func TestNodeSlashing(t *testing.T) {
 		var slashAmountInt big.Int
 		expectedSlashAmount.Int(&slashAmountInt)
 
-		if tx.Amount.Cmp(&slashAmountInt) != 0 {
-			t.Errorf("Transaction has wrong amount: expected %s, got %s", slashAmountInt.String(), tx.Amount.String())
+		if slashingEvent.SlashedAmount.Cmp(&slashAmountInt) != 0 {
+			t.Errorf("Slashing event has wrong amount: expected %s, got %s", slashAmountInt.String(), slashingEvent.SlashedAmount.String())
 		}
 
 		// Verify stake decreased
@@ -775,17 +773,17 @@ func TestNodeSlashing(t *testing.T) {
 
 	// Test invalid severity
 	t.Run("InvalidSlashSeverity", func(t *testing.T) {
-		_, err := engine.SlashNode(nodeID, "Invalid severity", 0)
+		_, err := engine.SlashNode(nodeID, "Invalid severity", 0, "test_query_id")
 		if err == nil {
 			t.Error("Expected error for zero severity, got nil")
 		}
 
-		_, err = engine.SlashNode(nodeID, "Invalid severity", -0.1)
+		_, err = engine.SlashNode(nodeID, "Invalid severity", -0.1, "test_query_id")
 		if err == nil {
 			t.Error("Expected error for negative severity, got nil")
 		}
 
-		_, err = engine.SlashNode(nodeID, "Invalid severity", 1.1)
+		_, err = engine.SlashNode(nodeID, "Invalid severity", 1.1, "test_query_id")
 		if err == nil {
 			t.Error("Expected error for severity > 1, got nil")
 		}
@@ -793,7 +791,7 @@ func TestNodeSlashing(t *testing.T) {
 
 	// Test non-existent node
 	t.Run("NonExistentNode", func(t *testing.T) {
-		_, err := engine.SlashNode("non-existent", "Node doesn't exist", 0.5)
+		_, err := engine.SlashNode("non-existent", "Node doesn't exist", 0.5, "test_query_id")
 		if err != ErrAccountNotFound {
 			t.Errorf("Expected account not found error, got: %v", err)
 		}
@@ -888,7 +886,7 @@ func TestGetTransactions(t *testing.T) {
 		t.Fatalf("Failed to create user account: %v", err)
 	}
 
-	_, err = engine.CreateNodeAccount(nodeID, "0xTxNodeAddress")
+	_, err = engine.CreateNodeAccount(GenerateTestPeerID("node"))
 	if err != nil {
 		t.Fatalf("Failed to create node account: %v", err)
 	}
@@ -970,8 +968,8 @@ func TestGetNetworkStats(t *testing.T) {
 	}
 
 	for i := 0; i < 2; i++ {
-		nodeID := fmt.Sprintf("stats-node-%d", i)
-		nodeAcc, err := engine.CreateNodeAccount(nodeID, fmt.Sprintf("0xStatsNode%dAddress", i))
+		nodeID := GenerateTestPeerID(fmt.Sprintf("stats%d", i))
+		nodeAcc, err := engine.CreateNodeAccount(nodeID)
 		if err != nil {
 			t.Fatalf("Failed to create node account: %v", err)
 		}

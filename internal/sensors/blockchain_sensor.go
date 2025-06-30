@@ -1,4 +1,4 @@
-package sensorhub
+package sensors
 
 import (
 	"context"
