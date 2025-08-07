@@ -1,7 +1,10 @@
 package api
 
 import (
+	"bufio"
 	"log"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -9,13 +12,13 @@ import (
 type RealtimeBroadcaster struct {
 	wsManager *WebSocketManager
 	server    *Server
-	
+
 	// Broadcasting channels
-	systemEvents    chan *WebSocketMessage
-	ollamaEvents    chan *WebSocketMessage
-	queryEvents     chan *WebSocketMessage
-	metricsEvents   chan *WebSocketMessage
-	
+	systemEvents  chan *WebSocketMessage
+	ollamaEvents  chan *WebSocketMessage
+	queryEvents   chan *WebSocketMessage
+	metricsEvents chan *WebSocketMessage
+
 	// Control
 	stopChan chan struct{}
 	started  bool
@@ -39,20 +42,23 @@ func (rb *RealtimeBroadcaster) Start() {
 	if rb.started {
 		return
 	}
-	
+
 	rb.started = true
 	log.Printf("Starting real-time broadcaster")
-	
+
 	// Start event processors
 	go rb.processSystemEvents()
 	go rb.processOllamaEvents()
 	go rb.processQueryEvents()
 	go rb.processMetricsEvents()
-	
+
 	// Start periodic broadcasters
 	go rb.broadcastPeriodicMetrics()
 	go rb.broadcastConsciousnessState()
 	go rb.broadcastOllamaStatus()
+
+	// Start log file watcher
+	go rb.watchCortexLogs()
 }
 
 // Stop stops the real-time broadcaster
@@ -60,7 +66,7 @@ func (rb *RealtimeBroadcaster) Stop() {
 	if !rb.started {
 		return
 	}
-	
+
 	log.Printf("Stopping real-time broadcaster")
 	close(rb.stopChan)
 	rb.started = false
@@ -71,7 +77,7 @@ func (rb *RealtimeBroadcaster) BroadcastSystemEvent(eventType string, data inter
 	if !rb.started {
 		return
 	}
-	
+
 	message := &WebSocketMessage{
 		Type: WSMsgTypeNotification,
 		Data: map[string]interface{}{
@@ -81,7 +87,7 @@ func (rb *RealtimeBroadcaster) BroadcastSystemEvent(eventType string, data inter
 		},
 		Timestamp: time.Now(),
 	}
-	
+
 	select {
 	case rb.systemEvents <- message:
 	default:
@@ -94,7 +100,7 @@ func (rb *RealtimeBroadcaster) BroadcastOllamaEvent(eventType string, data inter
 	if !rb.started {
 		return
 	}
-	
+
 	message := &WebSocketMessage{
 		Type: WSMsgTypeOllamaStatus,
 		Data: map[string]interface{}{
@@ -104,7 +110,7 @@ func (rb *RealtimeBroadcaster) BroadcastOllamaEvent(eventType string, data inter
 		},
 		Timestamp: time.Now(),
 	}
-	
+
 	select {
 	case rb.ollamaEvents <- message:
 	default:
@@ -117,7 +123,7 @@ func (rb *RealtimeBroadcaster) BroadcastQueryEvent(queryID, eventType string, da
 	if !rb.started {
 		return
 	}
-	
+
 	message := &WebSocketMessage{
 		Type: WSMsgTypeNotification,
 		ID:   queryID,
@@ -128,11 +134,80 @@ func (rb *RealtimeBroadcaster) BroadcastQueryEvent(queryID, eventType string, da
 		},
 		Timestamp: time.Now(),
 	}
-	
+
 	select {
 	case rb.queryEvents <- message:
 	default:
 		log.Printf("Query events channel full, dropping event")
+	}
+}
+
+// BroadcastModelEvent broadcasts a model management event
+func (rb *RealtimeBroadcaster) BroadcastModelEvent(eventType string, data interface{}) {
+	if !rb.started {
+		return
+	}
+
+	message := &WebSocketMessage{
+		Type: WSMsgTypeOllamaStatus,
+		Data: map[string]interface{}{
+			"event_type": eventType,
+			"data":       data,
+			"source":     "model_management",
+		},
+		Timestamp: time.Now(),
+	}
+
+	select {
+	case rb.ollamaEvents <- message:
+	default:
+		log.Printf("Model events channel full, dropping event")
+	}
+}
+
+// BroadcastLogEntry broadcasts a log entry to connected clients
+func (rb *RealtimeBroadcaster) BroadcastLogEntry(level, message, source string) {
+	if !rb.started {
+		return
+	}
+
+	logMessage := &WebSocketMessage{
+		Type: "ollama_logs",
+		Data: map[string]interface{}{
+			"level":   level,
+			"message": message,
+			"source":  source,
+		},
+		Timestamp: time.Now(),
+	}
+
+	select {
+	case rb.ollamaEvents <- logMessage:
+	default:
+		log.Printf("Log events channel full, dropping log entry")
+	}
+}
+
+// BroadcastCortexLogEntry broadcasts a cortex log entry to connected clients
+func (rb *RealtimeBroadcaster) BroadcastCortexLogEntry(level, message, source string) {
+	if !rb.started {
+		return
+	}
+
+	logMessage := &WebSocketMessage{
+		Type: "cortex_logs",
+		Data: map[string]interface{}{
+			"level":   level,
+			"message": message,
+			"source":  source,
+		},
+		Timestamp: time.Now(),
+	}
+
+	select {
+	case rb.systemEvents <- logMessage:
+	default:
+		log.Printf("Cortex log events channel full, dropping log entry")
 	}
 }
 
@@ -142,7 +217,7 @@ func (rb *RealtimeBroadcaster) processSystemEvents() {
 		select {
 		case event := <-rb.systemEvents:
 			rb.wsManager.BroadcastToSubscribers(SubTypeSystemEvents, event)
-			
+
 		case <-rb.stopChan:
 			return
 		}
@@ -155,7 +230,7 @@ func (rb *RealtimeBroadcaster) processOllamaEvents() {
 		select {
 		case event := <-rb.ollamaEvents:
 			rb.wsManager.BroadcastToSubscribers(SubTypeOllamaStatus, event)
-			
+
 		case <-rb.stopChan:
 			return
 		}
@@ -168,7 +243,7 @@ func (rb *RealtimeBroadcaster) processQueryEvents() {
 		select {
 		case event := <-rb.queryEvents:
 			rb.wsManager.BroadcastToSubscribers(SubTypeQueryResults, event)
-			
+
 		case <-rb.stopChan:
 			return
 		}
@@ -181,7 +256,7 @@ func (rb *RealtimeBroadcaster) processMetricsEvents() {
 		select {
 		case event := <-rb.metricsEvents:
 			rb.wsManager.BroadcastToSubscribers(SubTypeMetrics, event)
-			
+
 		case <-rb.stopChan:
 			return
 		}
@@ -192,12 +267,12 @@ func (rb *RealtimeBroadcaster) processMetricsEvents() {
 func (rb *RealtimeBroadcaster) broadcastPeriodicMetrics() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
 			rb.broadcastSystemMetrics()
-			
+
 		case <-rb.stopChan:
 			return
 		}
@@ -209,19 +284,19 @@ func (rb *RealtimeBroadcaster) broadcastSystemMetrics() {
 	if rb.server == nil || rb.server.Metrics == nil {
 		return
 	}
-	
+
 	rb.server.Metrics.mu.RLock()
 	metrics := map[string]interface{}{
-		"queries_processed":   rb.server.Metrics.QueriesProcessed,
-		"query_successes":     rb.server.Metrics.QuerySuccesses,
-		"query_failures":      rb.server.Metrics.QueryFailures,
-		"documents_added":     rb.server.Metrics.DocumentsAdded,
-		"rag_queries_total":   rb.server.Metrics.RAGQueriesTotal,
-		"rag_query_failures":  rb.server.Metrics.RAGQueryFailures,
+		"queries_processed":     rb.server.Metrics.QueriesProcessed,
+		"query_successes":       rb.server.Metrics.QuerySuccesses,
+		"query_failures":        rb.server.Metrics.QueryFailures,
+		"documents_added":       rb.server.Metrics.DocumentsAdded,
+		"rag_queries_total":     rb.server.Metrics.RAGQueriesTotal,
+		"rag_query_failures":    rb.server.Metrics.RAGQueryFailures,
 		"websocket_connections": rb.wsManager.GetConnectionCount(),
 	}
 	rb.server.Metrics.mu.RUnlock()
-	
+
 	message := &WebSocketMessage{
 		Type: WSMsgTypeMetrics,
 		Data: map[string]interface{}{
@@ -230,7 +305,7 @@ func (rb *RealtimeBroadcaster) broadcastSystemMetrics() {
 		},
 		Timestamp: time.Now(),
 	}
-	
+
 	rb.wsManager.BroadcastToSubscribers(SubTypeMetrics, message)
 }
 
@@ -238,7 +313,7 @@ func (rb *RealtimeBroadcaster) broadcastSystemMetrics() {
 func (rb *RealtimeBroadcaster) broadcastConsciousnessState() {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -246,7 +321,7 @@ func (rb *RealtimeBroadcaster) broadcastConsciousnessState() {
 				consciousnessRuntime := rb.server.RAGSystem.ContextManager.GetConsciousnessRuntime()
 				if consciousnessRuntime != nil {
 					state := consciousnessRuntime.GetConsciousnessState()
-					
+
 					message := &WebSocketMessage{
 						Type: WSMsgTypeConsciousness,
 						Data: map[string]interface{}{
@@ -255,11 +330,11 @@ func (rb *RealtimeBroadcaster) broadcastConsciousnessState() {
 						},
 						Timestamp: time.Now(),
 					}
-					
+
 					rb.wsManager.BroadcastToSubscribers(SubTypeConsciousness, message)
 				}
 			}
-			
+
 		case <-rb.stopChan:
 			return
 		}
@@ -270,13 +345,13 @@ func (rb *RealtimeBroadcaster) broadcastConsciousnessState() {
 func (rb *RealtimeBroadcaster) broadcastOllamaStatus() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
 			if rb.server.RAGSystem != nil {
 				status := rb.server.RAGSystem.GetEmbeddedStatus()
-				
+
 				message := &WebSocketMessage{
 					Type: WSMsgTypeOllamaStatus,
 					Data: map[string]interface{}{
@@ -285,12 +360,147 @@ func (rb *RealtimeBroadcaster) broadcastOllamaStatus() {
 					},
 					Timestamp: time.Now(),
 				}
-				
+
 				rb.wsManager.BroadcastToSubscribers(SubTypeOllamaStatus, message)
 			}
-			
+
 		case <-rb.stopChan:
 			return
 		}
 	}
+}
+
+// watchCortexLogs watches the cortex.log file and broadcasts new log entries
+func (rb *RealtimeBroadcaster) watchCortexLogs() {
+	// Find the cortex.log file
+	logPath := "cortex.log"
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		// Try common locations
+		possiblePaths := []string{
+			"./cortex.log",
+			"../cortex.log",
+			"/var/log/cortex.log",
+			"/tmp/cortex.log",
+		}
+
+		for _, path := range possiblePaths {
+			if _, err := os.Stat(path); err == nil {
+				logPath = path
+				break
+			}
+		}
+	}
+
+	log.Printf("Starting cortex log watcher for: %s", logPath)
+
+	for {
+		select {
+		case <-rb.stopChan:
+			return
+		default:
+			rb.tailLogFile(logPath)
+			// If tailing fails, wait a bit before retrying
+			time.Sleep(5 * time.Second)
+		}
+	}
+}
+
+// tailLogFile tails the log file and broadcasts new entries
+func (rb *RealtimeBroadcaster) tailLogFile(logPath string) {
+	file, err := os.Open(logPath)
+	if err != nil {
+		log.Printf("Failed to open cortex log file %s: %v", logPath, err)
+		return
+	}
+	defer file.Close()
+
+	// Get file size to start reading from the end
+	fileInfo, err := file.Stat()
+	if err != nil {
+		log.Printf("Failed to get cortex log file info: %v", err)
+		return
+	}
+
+	// Start from the end of the file for new logs
+	currentSize := fileInfo.Size()
+	file.Seek(currentSize, 0)
+
+	scanner := bufio.NewScanner(file)
+
+	// Watch for new lines
+	for {
+		select {
+		case <-rb.stopChan:
+			return
+		default:
+			if scanner.Scan() {
+				line := scanner.Text()
+				if line != "" {
+					rb.parseCortexLogLine(line)
+				}
+			} else {
+				// Check if file has grown
+				newFileInfo, err := file.Stat()
+				if err != nil {
+					log.Printf("Error checking cortex log file: %v", err)
+					return
+				}
+
+				if newFileInfo.Size() < currentSize {
+					// File was truncated or rotated, restart from beginning
+					log.Printf("Cortex log file rotated, restarting watcher")
+					return
+				}
+
+				// No new data, wait a bit
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}
+}
+
+// parseCortexLogLine parses a cortex log line and broadcasts it
+func (rb *RealtimeBroadcaster) parseCortexLogLine(line string) {
+	// Parse cortex log format: "2025/06/30 21:55:50 message"
+	parts := strings.SplitN(line, " ", 3)
+	if len(parts) < 3 {
+		// Fallback for malformed lines
+		rb.BroadcastCortexLogEntry("INFO", line, "cortex")
+		return
+	}
+
+	// Extract timestamp and message
+	timestamp := parts[0] + " " + parts[1]
+	message := parts[2]
+
+	// Determine log level from message content
+	level := "INFO"
+	messageLower := strings.ToLower(message)
+
+	if strings.Contains(messageLower, "error") || strings.Contains(messageLower, "failed") {
+		level = "ERROR"
+	} else if strings.Contains(messageLower, "warning") || strings.Contains(messageLower, "warn") {
+		level = "WARN"
+	} else if strings.Contains(messageLower, "debug") {
+		level = "DEBUG"
+	}
+
+	// Extract source from message if possible
+	source := "cortex"
+	if strings.Contains(messageLower, "ollama") {
+		source = "ollama"
+	} else if strings.Contains(messageLower, "websocket") {
+		source = "websocket"
+	} else if strings.Contains(messageLower, "agent") {
+		source = "agents"
+	} else if strings.Contains(messageLower, "rag") || strings.Contains(messageLower, "consciousness") {
+		source = "rag"
+	} else if strings.Contains(messageLower, "p2p") || strings.Contains(messageLower, "network") {
+		source = "p2p"
+	}
+
+	// Include timestamp in the message for better context
+	fullMessage := "[" + timestamp + "] " + message
+
+	rb.BroadcastCortexLogEntry(level, fullMessage, source)
 }

@@ -616,6 +616,7 @@ func (n *P2PNode) WaitForPeers(ctx context.Context, minPeers int) error {
 		}
 	}
 }
+
 // Broadcast sends data to a specific topic (generic interface)
 func (n *P2PNode) Broadcast(topic string, data []byte) error {
 	return n.Publish(topic, data)
@@ -627,7 +628,7 @@ func (n *P2PNode) Subscribe(topic string, handler func([]byte)) error {
 	if err != nil {
 		return err
 	}
-	
+
 	go func() {
 		for {
 			msg, err := subscription.Next(context.Background())
@@ -638,7 +639,7 @@ func (n *P2PNode) Subscribe(topic string, handler func([]byte)) error {
 			handler(msg.Data)
 		}
 	}()
-	
+
 	return nil
 }
 

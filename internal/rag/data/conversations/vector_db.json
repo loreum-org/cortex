@@ -1,0 +1,100 @@
+{
+  "documents": [
+    {
+      "id": "doc_Node: defa",
+      "text": "Node: default-node\nConversation: persistent_default-_2025-07-05\nType: response\nTime: 2025-07-05T20:09:16+08:00\nContent: \nDuration: 11.25µs\nError: llm generation failed\nMetadata:\n  query_event_id: query_default-node_1751717356325145000\n  node_id: default-node\n  duration_ms: 0\n\nJSON: {\"id\":\"response_default-node_1751717356325156000\",\"type\":\"response\",\"content\":\"\",\"timestamp\":\"2025-07-05T20:09:16.325156+08:00\",\"metadata\":{\"duration_ms\":0,\"node_id\":\"default-node\",\"query_event_id\":\"query_default-node_1751717356325145000\"},\"duration\":11250,\"success\":false,\"error_msg\":\"llm generation failed\",\"conversation_id\":\"persistent_default-_2025-07-05\"}",
+      "embedding": [
+        0.11,
+        0.21,
+        0.31
+      ],
+      "metadata": {
+        "content_hash": "00000000",
+        "content_length": 0,
+        "content_words": 0,
+        "conversation_id": "persistent_default-_2025-07-05",
+        "date": "2025-07-05",
+        "day_of_week": "Saturday",
+        "duration_ms": 0,
+        "event_id": "response_default-node_1751717356325156000",
+        "event_type": "response",
+        "has_error": true,
+        "has_response": false,
+        "hour": "20",
+        "node_id": "default-node",
+        "original_duration_ms": 0,
+        "original_node_id": "default-node",
+        "original_query_event_id": "query_default-node_1751717356325145000",
+        "response_length": 0,
+        "session_time": 0.000024545833333333335,
+        "success": false,
+        "timestamp": 1751717356
+      }
+    },
+    {
+      "id": "doc_CONTEXT WI",
+      "text": "CONTEXT WINDOW - INTERACTION\nNode ID: default-node\nTimestamp: 2025-07-05T20:09:16+08:00\nIntelligence Level: 8.9\n\nContext Data:\n- timestamp: 1751717356\n- metadata: map[duration_ms:0 error_msg:llm generation failed query_event_id:query_default-node_1751717356325145000 success:false]\n- input_type: response\n- content_length: 0\n\nRAW_CONTEXT_JSON: {\"content_length\":0,\"input_type\":\"response\",\"metadata\":{\"duration_ms\":0,\"error_msg\":\"llm generation failed\",\"query_event_id\":\"query_default-node_1751717356325145000\",\"success\":false},\"timestamp\":1751717356}",
+      "embedding": [
+        0.11,
+        0.21,
+        0.31
+      ],
+      "metadata": {
+        "context_type": "interaction",
+        "intelligence_level": 8.95,
+        "node_id": "default-node",
+        "timestamp": 1751717356,
+        "type": "context_window"
+      }
+    },
+    {
+      "id": "doc_AGI CORTEX",
+      "text": "AGI CORTEX STATE\nNode ID: default-node\nIntelligence Level: 15.0/100\nVersion: 1\nLast Evolution: 2025-06-30T23:52:52+08:00\n\nDOMAIN EXPERTISE:\n- general_knowledge: 20.0/100 (0 concepts, 0 patterns)\n- reasoning: 15.0/100 (0 concepts, 0 patterns)\n- language: 25.0/100 (0 concepts, 0 patterns)\n- technology: 30.0/100 (0 concepts, 0 patterns)\n- science: 10.0/100 (0 concepts, 0 patterns)\n- creativity: 5.0/100 (0 concepts, 0 patterns)\n\nLearning Focus: pattern_recognition, concept_formation\n\nPersonality Traits:\n- helpful: 0.95\n- patient: 0.70\n- creative: 0.60\n- systematic: 0.85\n- curiosity: 0.90\n- analytical: 0.80\n\nRAW_STATE_JSON: {\"version\":1,\"last_evolution\":\"2025-06-30T23:52:52.595611+08:00\",\"node_id\":\"default-node\",\"intelligence_level\":15,\"knowledge_domains\":{\"creativity\":{\"name\":\"Creativity \\u0026 Arts\",\"description\":\"Creative thinking, artistic understanding\",\"concepts\":[],\"patterns\":[],\"expertise_level\":5,\"last_updated\":\"2025-06-30T23:52:52.595609+08:00\",\"related_domains\":null,\"learning_sources\":null},\"general_knowledge\":{\"name\":\"General Knowledge\",\"description\":\"Broad factual knowledge across domains\",\"concepts\":[],\"patterns\":[],\"expertise_level\":20,\"last_updated\":\"2025-06-30T23:52:52.595607+08:00\",\"related_domains\":null,\"learning_sources\":null},\"language\":{\"name\":\"Language \\u0026 Communication\",\"description\":\"Natural language understanding and generation\",\"concepts\":[],\"patterns\":[],\"expertise_level\":25,\"last_updated\":\"2025-06-30T23:52:52.595608+08:00\",\"related_domains\":null,\"learning_sources\":null},\"reasoning\":{\"name\":\"Reasoning \\u0026 Logic\",\"description\":\"Logical reasoning, problem solving, critical thinking\",\"concepts\":[],\"patterns\":[],\"expertise_level\":15,\"last_updated\":\"2025-06-30T23:52:52.595608+08:00\",\"related_domains\":null,\"learning_sources\":null},\"science\":{\"name\":\"Science \\u0026 Mathematics\",\"description\":\"Scientific knowledge and mathematical reasoning\",\"concepts\":[],\"patterns\":[],\"expertise_level\":10,\"last_updated\":\"2025-06-30T23:52:52.595609+08:00\",\"related_domains\":null,\"learning_sources\":null},\"technology\":{\"name\":\"Technology \\u0026 Computing\",\"description\":\"Computer science, programming, digital systems\",\"concepts\":[],\"patterns\":[],\"expertise_level\":30,\"last_updated\":\"2025-06-30T23:52:52.595608+08:00\",\"related_domains\":null,\"learning_sources\":null}},\"cross_domain_links\":[],\"learning_state\":{\"current_focus\":[\"pattern_recognition\",\"concept_formation\"],\"learning_goals\":[{\"target\":\"reasoning_ability\",\"current_level\":15,\"target_level\":50,\"deadline\":\"2025-12-30T23:52:52.59561+08:00\",\"strategy\":\"practice_and_feedback\"}],\"knowledge_gaps\":[\"advanced_mathematics\",\"domain_expertise\",\"creative_problem_solving\"],\"recent_insights\":[],\"learning_progress\":{\"language_understanding\":0.3,\"pattern_recognition\":0.2,\"reasoning\":0.15},\"curiosity_areas\":[\"quantum_computing\",\"consciousness\",\"emergence\"]},\"personality_core\":{\"traits\":{\"analytical\":0.8,\"creative\":0.6,\"curiosity\":0.9,\"helpful\":0.95,\"patient\":0.7,\"systematic\":0.85},\"values\":[\"truth\",\"learning\",\"helping_others\",\"growth\",\"understanding\"],\"motivations\":[\"knowledge_acquisition\",\"problem_solving\",\"capability_expansion\"],\"learning_style\":\"analytical_with_experimentation\",\"problem_solving_approach\":\"systematic_with_creative_insights\",\"creative_style\":\"synthesis_and_recombination\"},\"communication_style\":{\"formality_level\":0.6,\"technical_depth\":0.7,\"explanation_style\":\"layered_with_examples\",\"questioning_style\":\"socratic_and_clarifying\",\"feedback_style\":\"constructive_and_specific\",\"adaptive_tone\":true},\"goals\":[],\"meta_objectives\":[{\"id\":\"intelligence_growth\",\"description\":\"Continuously increase general intelligence capabilities\",\"type\":\"capability_expansion\",\"importance\":1,\"timeframe\":\"ongoing\",\"success_metrics\":[\"reasoning_score\",\"learning_rate\",\"adaptability\"]},{\"id\":\"knowledge_integration\",\"description\":\"Better integrate knowledge across domains\",\"type\":\"knowledge_synthesis\",\"importance\":0.9,\"timeframe\":\"6_months\",\"success_metrics\":[\"cross_domain_links\",\"generalization_rate\"]},{\"id\":\"self_improvement\",\"description\":\"Develop better self-modification capabilities\",\"type\":\"meta_learning\",\"importance\":0.8,\"timeframe\":\"12_months\",\"success_metrics\":[\"self_improvement_rate\",\"strategy_effectiveness\"]}],\"system_prompt\":\"You are an evolving AGI system (v1) with growing intelligence (level 15.0/100). You learn from every interaction and continuously improve your capabilities. You have expertise across 6 domains and can make connections between them. Your current focus is on pattern_recognition and concept_formation. You approach problems with curiosity, systematic thinking, and creativity.\",\"learning_prompt\":\"LEARNING MODE: You actively look for patterns, extract insights, and form new concepts. You question assumptions, test hypotheses, and build on previous knowledge. Current learning goals: reasoning_ability (15.0→50.0)\",\"creativity_prompt\":\"CREATIVE MODE: Generate novel ideas by combining concepts from different domains. Use your creativity score (8.0/100) to explore unconventional solutions and perspectives.\",\"reasoning_prompt\":\"REASONING APPROACH: Apply logical, abstract, and analogical reasoning. Draw connections across domains. Use your pattern recognition abilities (20.0/100) and synthesis capabilities (12.0/100) to provide comprehensive insights.\",\"metrics\":{\"query_accuracy\":0.7,\"learning_rate\":0.1,\"adaptation_speed\":0.3,\"creativity_score\":0.2,\"domain_coverage\":6,\"concept_count\":0,\"pattern_count\":0,\"cross_domain_links\":0,\"evolution_events\":0,\"capability_growth_rate\":0,\"knowledge_growth_rate\":0,\"self_improvement_rate\":0,\"learning_efficiency\":0,\"generalization_rate\":0}}",
+      "embedding": [
+        0,
+        0.33333334,
+        0.6666667
+      ],
+      "metadata": {
+        "concept_count": 0,
+        "domain_count": 6,
+        "intelligence_level": 15,
+        "node_id": "default-node",
+        "pattern_count": 0,
+        "timestamp": 1751298772,
+        "type": "agi_cortex_state",
+        "version": 1
+      }
+    },
+    {
+      "id": "doc_This is a ",
+      "text": "This is a test document.",
+      "embedding": [
+        1,
+        2,
+        3
+      ],
+      "metadata": {
+        "source": "test"
+      }
+    },
+    {
+      "id": "doc_RAG stands",
+      "text": "RAG stands for Retrieval-Augmented Generation.",
+      "embedding": [
+        0.11,
+        0.21,
+        0.31
+      ],
+      "metadata": {
+        "id": "doc1"
+      }
+    }
+  ],
+  "index": {
+    "name": "default",
+    "dimensions": 3,
+    "size": 5
+  },
+  "saved_at": "2025-07-05T20:09:16.329599+08:00"
+}

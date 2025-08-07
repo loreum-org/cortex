@@ -18,9 +18,10 @@ type RAGSystem struct {
 	VectorDB         *VectorStorage
 	QueryProcessor   *QueryProcessor
 	ModelManager     *ai.ModelManager
-	EmbeddedManager  *ai.EmbeddedModelManager  // Reference to embedded Ollama manager
+	EmbeddedManager  *ai.EmbeddedModelManager // Reference to embedded Ollama manager
 	ContextBuilder   *ContextBuilder
 	ContextManager   *ContextManager
+	UserProfileManager *UserProfileManager    // User profile management
 	DefaultOptions   ai.GenerateOptions
 }
 
@@ -43,13 +44,13 @@ func NewRAGSystem(dimensions int) *RAGSystem {
 func NewRAGSystemWithNodeID(dimensions int, nodeID string) *RAGSystem {
 	// Create an embedded model manager with Ollama lifecycle management
 	embeddedConfig := ai.DefaultEmbeddedManagerConfig()
-	embeddedConfig.AutoModels = []string{"cogito", "llama2", "nomic-embed-text"}
-	
+	embeddedConfig.AutoModels = []string{"cogito", "nomic-embed-text"}
+
 	embeddedManager := ai.NewEmbeddedModelManager(embeddedConfig)
-	
+
 	// Will be set up after RAG system creation
 	var ragSystemRef *RAGSystem
-	
+
 	// Set up callback to update consciousness default model when ready
 	embeddedManager.OnDefaultModelReady = func(modelID string) {
 		if ragSystemRef != nil && ragSystemRef.ContextManager != nil {
@@ -57,7 +58,7 @@ func NewRAGSystemWithNodeID(dimensions int, nodeID string) *RAGSystem {
 			ragSystemRef.ContextManager.SetModelManager(embeddedManager.ModelManager, modelID)
 		}
 	}
-	
+
 	// Start embedded Ollama (non-blocking)
 	go func() {
 		ctx := context.Background()
@@ -81,35 +82,38 @@ func NewRAGSystemWithNodeID(dimensions int, nodeID string) *RAGSystem {
 		log.Printf("Warning: Failed to register OpenAI models: %v", err)
 	}
 
-	// Create the RAG system
+	// Create the RAG system with persistent storage
+	vectorPersistPath := "data/conversations/vector_db.json"
+	userProfilePath := "data/conversations/user_profile.json" // Single user per node
 	ragSystem := &RAGSystem{
-		VectorDB: NewVectorStorage(dimensions),
+		VectorDB: NewPersistentVectorStorage(dimensions, vectorPersistPath),
 		QueryProcessor: &QueryProcessor{
 			ModelID: "default",
 		},
-		ModelManager:    embeddedManager.ModelManager,
-		EmbeddedManager: embeddedManager,
+		ModelManager:       embeddedManager.ModelManager,
+		EmbeddedManager:    embeddedManager,
+		UserProfileManager: NewUserProfileManager(userProfilePath),
 		ContextBuilder: &ContextBuilder{
 			MaxContextLength: 4096,
 		},
 		DefaultOptions: ai.DefaultGenerateOptions(),
 	}
-	
+
 	// Create and assign the context manager
 	ragSystem.ContextManager = NewContextManager(ragSystem, nodeID)
-	
+
 	// Set up the reference for callback
 	ragSystemRef = ragSystem
-	
+
 	return ragSystem
 }
 
 // Shutdown gracefully shuts down the RAG system
 func (r *RAGSystem) Shutdown() error {
 	log.Printf("Shutting down RAG system...")
-	
+
 	var shutdownErr error
-	
+
 	// Stop embedded Ollama if running
 	if r.EmbeddedManager != nil {
 		if err := r.EmbeddedManager.Stop(); err != nil {
@@ -117,7 +121,7 @@ func (r *RAGSystem) Shutdown() error {
 			shutdownErr = err
 		}
 	}
-	
+
 	log.Printf("RAG system shutdown complete")
 	return shutdownErr
 }
@@ -131,6 +135,14 @@ func (r *RAGSystem) GetEmbeddedStatus() map[string]interface{} {
 		"enabled": false,
 		"message": "Embedded Ollama not available",
 	}
+}
+
+// GetAGISystem returns the AGI system from the context manager
+func (r *RAGSystem) GetAGISystem() *AGIPromptSystem {
+	if r.ContextManager != nil {
+		return r.ContextManager.GetAGISystem()
+	}
+	return nil
 }
 
 // RestartEmbeddedOllama restarts the embedded Ollama server
@@ -147,7 +159,7 @@ func tryRegisterOllamaModels(manager *ai.ModelManager) error {
 	config := ai.DefaultOllamaConfig()
 
 	// Create a test model to check connectivity
-	testModel := ai.NewOllamaModel("llama2", config)
+	testModel := ai.NewOllamaModel("cogito", config)
 
 	// Check if Ollama is healthy
 	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
@@ -157,8 +169,8 @@ func tryRegisterOllamaModels(manager *ai.ModelManager) error {
 		return errors.New("Ollama service not available")
 	}
 
-	// Register default models
-	models := []string{"llama2", "mistral", "codellama"}
+	// Register default models - use only available models
+	models := []string{"cogito", "llama3.2:3b", "llama3.2:1b", "nomic-embed-text:latest"}
 	for _, modelName := range models {
 		model := ai.NewOllamaModel(modelName, config)
 		manager.RegisterModel(model)
@@ -221,16 +233,16 @@ func (r *RAGSystem) Query(ctx context.Context, text string) (string, error) {
 // QueryWithContext performs a RAG query with optional conversation context
 func (r *RAGSystem) QueryWithContext(ctx context.Context, text string, useConversationContext bool, contextHistoryCount int) (string, error) {
 	startTime := time.Now()
-	
+
 	// Track the query
 	eventID := r.ContextManager.TrackQuery(ctx, text, "rag", map[string]interface{}{
 		"use_conversation_context": useConversationContext,
 		"context_history_count":    contextHistoryCount,
 	})
-	
+
 	var response string
 	var err error
-	
+
 	defer func() {
 		// Track the response
 		duration := time.Since(startTime)
@@ -241,7 +253,7 @@ func (r *RAGSystem) QueryWithContext(ctx context.Context, text string, useConver
 		}
 		r.ContextManager.TrackResponse(ctx, eventID, response, duration, success, errorMsg)
 	}()
-	
+
 	// Build contextual prompt if requested
 	queryText := text
 	if useConversationContext && contextHistoryCount > 0 {
@@ -252,7 +264,7 @@ func (r *RAGSystem) QueryWithContext(ctx context.Context, text string, useConver
 			queryText = contextualPrompt
 		}
 	}
-	
+
 	// Get the model
 	model, err := r.ModelManager.GetModel(r.QueryProcessor.ModelID)
 	if err != nil {

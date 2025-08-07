@@ -300,7 +300,7 @@ func NewOllamaModel(modelName string, config OllamaConfig) *OllamaModel {
 	if contains(modelName, "codellama") || contains(modelName, "code-llama") {
 		info.Capabilities = append(info.Capabilities, CapabilityCodeGen)
 	}
-	if modelName == "nomic-embed-text" { // nomic-embed-text is primarily for embeddings
+	if strings.Contains(modelName, "nomic-embed-text") { // nomic-embed-text is primarily for embeddings
 		info.Capabilities = []ModelCapability{CapabilityEmbedding}
 		// Dimensions for nomic-embed-text can vary, but a common default is 768.
 		// However, the example used 384. Let's stick to the existing value unless specified.
@@ -367,7 +367,7 @@ func (m *OllamaModel) GenerateEmbedding(ctx context.Context, text string) ([]flo
 		}
 	}
 	if !isEmbeddingModel || !strings.Contains(embedModelName, "embed") { // Fallback or default
-		embedModelName = "nomic-embed-text"
+		embedModelName = "nomic-embed-text:latest"
 	}
 
 	reqBody := ollamaEmbedRequest{

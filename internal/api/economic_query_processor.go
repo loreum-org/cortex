@@ -17,11 +17,11 @@ import (
 
 // EconomicQueryProcessor handles query processing with full economic integration
 type EconomicQueryProcessor struct {
-	EconomicEngine *economy.EconomicEngine
-	SolverAgent    *agents.SolverAgent
-	RAGSystem      *rag.RAGSystem
-	P2PNode        *p2p.P2PNode
-	Metrics        *ServerMetrics
+	EconomicEngine  *economy.EconomicEngine
+	AgentRegistry   *agents.AgentRegistry
+	RAGSystem       *rag.RAGSystem
+	P2PNode         *p2p.P2PNode
+	Metrics         *ServerMetrics
 	// consensusBridge allows economic transactions to be routed through consensus
 	ConsensusBridge *consensus.EconomicBridge
 }
@@ -327,7 +327,7 @@ func (eqp *EconomicQueryProcessor) processQuery(ctx context.Context, query *type
 	// 2. Consider node reputation and stake
 	// 3. Select the best processor based on economic factors
 
-	response, err := eqp.SolverAgent.Process(ctx, &query.Query)
+	response, err := eqp.AgentRegistry.RouteQuery(ctx, &query.Query)
 	if err != nil {
 		return nil, "", err
 	}

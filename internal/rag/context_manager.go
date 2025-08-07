@@ -13,29 +13,30 @@ import (
 
 // ContextManager manages persistent context for the node owner
 type ContextManager struct {
-	ragSystem           *RAGSystem
-	agiSystem           *AGIPromptSystem
+	ragSystem            *RAGSystem
+	agiSystem            *AGIPromptSystem
 	consciousnessRuntime *ConsciousnessRuntime
-	nodeID              string
-	conversationID      string
-	sessionStartTime    time.Time
-	activityBuffer      []ActivityEvent
-	maxBufferSize       int
+	agiAgentBridge       *AGIAgentBridge
+	nodeID               string
+	conversationID       string
+	sessionStartTime     time.Time
+	activityBuffer       []ActivityEvent
+	maxBufferSize        int
 }
 
 // ActivityEvent represents a single user activity
 type ActivityEvent struct {
-	ID          string                 `json:"id"`
-	Type        string                 `json:"type"` // query, response, action, error, system
-	Content     string                 `json:"content"`
-	Timestamp   time.Time              `json:"timestamp"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Context     string                 `json:"context,omitempty"`
-	Response    string                 `json:"response,omitempty"`
-	Duration    time.Duration          `json:"duration,omitempty"`
-	Success     bool                   `json:"success"`
-	ErrorMsg    string                 `json:"error_msg,omitempty"`
-	ConversationID string              `json:"conversation_id"`
+	ID             string                 `json:"id"`
+	Type           string                 `json:"type"` // query, response, action, error, system
+	Content        string                 `json:"content"`
+	Timestamp      time.Time              `json:"timestamp"`
+	Metadata       map[string]interface{} `json:"metadata"`
+	Context        string                 `json:"context,omitempty"`
+	Response       string                 `json:"response,omitempty"`
+	Duration       time.Duration          `json:"duration,omitempty"`
+	Success        bool                   `json:"success"`
+	ErrorMsg       string                 `json:"error_msg,omitempty"`
+	ConversationID string                 `json:"conversation_id"`
 }
 
 // ConversationSummary represents a summarized conversation context
@@ -53,7 +54,7 @@ type ConversationSummary struct {
 // NewContextManager creates a new context manager for the node owner
 func NewContextManager(ragSystem *RAGSystem, nodeID string) *ContextManager {
 	conversationID := fmt.Sprintf("conv_%s_%d", nodeID, time.Now().Unix())
-	
+
 	cm := &ContextManager{
 		ragSystem:        ragSystem,
 		nodeID:           nodeID,
@@ -62,13 +63,13 @@ func NewContextManager(ragSystem *RAGSystem, nodeID string) *ContextManager {
 		activityBuffer:   make([]ActivityEvent, 0),
 		maxBufferSize:    50, // Buffer recent activities before embedding
 	}
-	
+
 	// Initialize AGI system
 	cm.agiSystem = NewAGIPromptSystem(ragSystem, cm, nodeID)
-	
+
 	// Initialize consciousness runtime
 	cm.consciousnessRuntime = NewConsciousnessRuntime(cm.agiSystem, ragSystem, cm, nodeID)
-	
+
 	// Load or create persistent conversation
 	go func() {
 		ctx := context.Background()
@@ -76,7 +77,7 @@ func NewContextManager(ragSystem *RAGSystem, nodeID string) *ContextManager {
 			log.Printf("Failed to load persistent conversation: %v", err)
 		}
 	}()
-	
+
 	// Start consciousness runtime
 	go func() {
 		ctx := context.Background()
@@ -86,31 +87,45 @@ func NewContextManager(ragSystem *RAGSystem, nodeID string) *ContextManager {
 			log.Printf("Failed to start consciousness runtime: %v", err)
 		}
 	}()
-	
+
 	log.Printf("[ContextManager] Initialized with consciousness runtime for node %s", nodeID)
-	
+
 	return cm
 }
 
 // GetRecentConversationHistory retrieves recent conversation history from activity buffer and memory
 func (cm *ContextManager) GetRecentConversationHistory(ctx context.Context, limit int) ([]ActivityEvent, error) {
-	// For now, use the activity buffer since it contains the most recent events
-	// In a production system, this would also search the vector DB for older history
-	
 	events := make([]ActivityEvent, 0)
-	
-	// Get events from activity buffer (most recent)
+
+	// First, get events from activity buffer (most recent)
 	bufferLimit := limit
 	if len(cm.activityBuffer) < bufferLimit {
 		bufferLimit = len(cm.activityBuffer)
 	}
-	
+
 	for i := len(cm.activityBuffer) - bufferLimit; i < len(cm.activityBuffer); i++ {
 		if i >= 0 {
 			events = append(events, cm.activityBuffer[i])
 		}
 	}
-	
+
+	// If we need more events and have vector DB access, search it
+	if len(events) < limit && cm.ragSystem != nil && cm.ragSystem.VectorDB != nil {
+		// Search for conversation documents in vector DB
+		needed := limit - len(events)
+		vectorEvents := cm.searchVectorDBForHistory(ctx, needed)
+
+		// Add vector DB events (they're older than buffer events)
+		for _, event := range vectorEvents {
+			events = append(events, event)
+		}
+
+		// Only log if we actually found events
+		if len(vectorEvents) > 0 {
+			log.Printf("[ContextManager] Found %d events in vector DB", len(vectorEvents))
+		}
+	}
+
 	// Sort by timestamp (most recent first)
 	for i := 0; i < len(events)-1; i++ {
 		for j := i + 1; j < len(events); j++ {
@@ -119,7 +134,11 @@ func (cm *ContextManager) GetRecentConversationHistory(ctx context.Context, limi
 			}
 		}
 	}
-	
+
+	// Only log if we're returning substantial events or if debugging
+	if len(events) > 0 {
+		log.Printf("[ContextManager] Returning %d conversation history events", len(events))
+	}
 	return events, nil
 }
 
@@ -129,19 +148,19 @@ func (cm *ContextManager) GetConversationContext(ctx context.Context, maxEvents 
 	if err != nil {
 		return "", err
 	}
-	
+
 	if len(history) == 0 {
 		return "This is the beginning of our conversation.", nil
 	}
-	
+
 	var contextBuilder strings.Builder
 	contextBuilder.WriteString("Recent conversation history:\n")
-	
+
 	for i, event := range history {
 		if i >= maxEvents {
 			break
 		}
-		
+
 		timestamp := event.Timestamp.Format("15:04:05")
 		switch event.Type {
 		case "query":
@@ -150,7 +169,7 @@ func (cm *ContextManager) GetConversationContext(ctx context.Context, maxEvents 
 			contextBuilder.WriteString(fmt.Sprintf("[%s] Assistant: %s\n", timestamp, event.Response))
 		}
 	}
-	
+
 	return contextBuilder.String(), nil
 }
 
@@ -162,17 +181,44 @@ func (cm *ContextManager) GetPersistentConversationID() string {
 	return fmt.Sprintf("persistent_%s_%s", cm.nodeID[:8], dateStr)
 }
 
+// GetUserPersistentConversationID returns a user-specific persistent conversation ID
+func (cm *ContextManager) GetUserPersistentConversationID(userID string) string {
+	// Create a deterministic conversation ID based on user ID and date
+	// This allows user conversations to continue across restarts within the same day
+	dateStr := time.Now().Format("2006-01-02")
+	
+	// Use user ID hash for privacy and consistent length
+	userHash := cm.hashUserID(userID)
+	return fmt.Sprintf("user_persistent_%s_%s_%s", cm.nodeID[:8], userHash, dateStr)
+}
+
+// hashUserID creates a consistent hash of user ID for conversation naming
+func (cm *ContextManager) hashUserID(userID string) string {
+	// Simple hash implementation
+	hash := 0
+	for _, char := range userID {
+		hash = hash*31 + int(char)
+	}
+	
+	// Convert to positive hex string (8 characters)
+	if hash < 0 {
+		hash = -hash
+	}
+	
+	return fmt.Sprintf("%08x", hash)[:8]
+}
+
 // LoadOrCreatePersistentConversation loads an existing conversation or creates a new one
 func (cm *ContextManager) LoadOrCreatePersistentConversation(ctx context.Context) error {
 	persistentID := cm.GetPersistentConversationID()
-	
+
 	// Check if we have any history for this persistent conversation
 	history, err := cm.GetRecentConversationHistory(ctx, 1)
 	if err == nil && len(history) > 0 {
 		// Found existing conversation, update our conversation ID
 		cm.conversationID = persistentID
 		log.Printf("[ContextManager] Loaded persistent conversation: %s", persistentID)
-		
+
 		// Update consciousness runtime if available
 		if cm.consciousnessRuntime != nil {
 			// Load recent context into working memory
@@ -185,14 +231,22 @@ func (cm *ContextManager) LoadOrCreatePersistentConversation(ctx context.Context
 		// No existing conversation, keep current session-based ID
 		log.Printf("[ContextManager] Starting new conversation session: %s", cm.conversationID)
 	}
-	
+
+	// Ensure the conversation ID is tracked in user profile
+	if cm.ragSystem != nil && cm.ragSystem.UserProfileManager != nil {
+		nodeUserID := fmt.Sprintf("node_user_%s", cm.nodeID)
+		if err := cm.ragSystem.UserProfileManager.AddConversationToProfile(nodeUserID, cm.conversationID); err != nil {
+			log.Printf("[ContextManager] Warning: Failed to add conversation to user profile: %v", err)
+		}
+	}
+
 	return nil
 }
 
 // TrackQuery tracks a user query and its context
 func (cm *ContextManager) TrackQuery(ctx context.Context, query string, queryType string, metadata map[string]interface{}) string {
 	eventID := cm.generateEventID("query")
-	
+
 	event := ActivityEvent{
 		ID:             eventID,
 		Type:           "query",
@@ -202,28 +256,28 @@ func (cm *ContextManager) TrackQuery(ctx context.Context, query string, queryTyp
 		ConversationID: cm.conversationID,
 		Success:        true,
 	}
-	
+
 	// Add query type and context information
 	if event.Metadata == nil {
 		event.Metadata = make(map[string]interface{})
 	}
 	event.Metadata["query_type"] = queryType
 	event.Metadata["node_id"] = cm.nodeID
-	
+
 	cm.addToBuffer(event)
-	
+
 	// Feed to AGI system for learning
 	if cm.agiSystem != nil {
 		go cm.agiSystem.ProcessInput(ctx, "query", query, map[string]interface{}{
 			"query_type": queryType,
-			"metadata": metadata,
-			"event_id": eventID,
+			"metadata":   metadata,
+			"event_id":   eventID,
 		})
 	}
-	
+
 	// Embed the query with context
 	go cm.embedActivity(ctx, event)
-	
+
 	return eventID
 }
 
@@ -245,11 +299,10 @@ func (cm *ContextManager) SetModelManager(modelManager interface{}, defaultModel
 	}
 }
 
-
 // TrackResponse tracks the response to a query
 func (cm *ContextManager) TrackResponse(ctx context.Context, queryEventID string, response string, duration time.Duration, success bool, errorMsg string) {
 	eventID := cm.generateEventID("response")
-	
+
 	event := ActivityEvent{
 		ID:             eventID,
 		Type:           "response",
@@ -265,19 +318,19 @@ func (cm *ContextManager) TrackResponse(ctx context.Context, queryEventID string
 			"duration_ms":    duration.Milliseconds(),
 		},
 	}
-	
+
 	cm.addToBuffer(event)
-	
+
 	// Feed to AGI system for learning
 	if cm.agiSystem != nil {
 		go cm.agiSystem.ProcessInput(ctx, "response", response, map[string]interface{}{
 			"query_event_id": queryEventID,
-			"success": success,
-			"duration_ms": duration.Milliseconds(),
-			"error_msg": errorMsg,
+			"success":        success,
+			"duration_ms":    duration.Milliseconds(),
+			"error_msg":      errorMsg,
 		})
 	}
-	
+
 	// Embed the response with query context
 	go cm.embedActivity(ctx, event)
 }
@@ -285,7 +338,7 @@ func (cm *ContextManager) TrackResponse(ctx context.Context, queryEventID string
 // TrackAction tracks system actions (service registration, config changes, etc.)
 func (cm *ContextManager) TrackAction(ctx context.Context, actionType string, description string, metadata map[string]interface{}) {
 	eventID := cm.generateEventID("action")
-	
+
 	event := ActivityEvent{
 		ID:             eventID,
 		Type:           "action",
@@ -295,16 +348,16 @@ func (cm *ContextManager) TrackAction(ctx context.Context, actionType string, de
 		ConversationID: cm.conversationID,
 		Success:        true,
 	}
-	
+
 	// Add action type information
 	if event.Metadata == nil {
 		event.Metadata = make(map[string]interface{})
 	}
 	event.Metadata["action_type"] = actionType
 	event.Metadata["node_id"] = cm.nodeID
-	
+
 	cm.addToBuffer(event)
-	
+
 	// Embed the action with context
 	go cm.embedActivity(ctx, event)
 }
@@ -336,33 +389,33 @@ func (cm *ContextManager) GetRecentContext(ctx context.Context, maxItems int) ([
 	if bufferSize >= maxItems {
 		return cm.activityBuffer[bufferSize-maxItems:], nil
 	}
-	
+
 	// Need to get more from embedded storage
 	needed := maxItems - bufferSize
-	
+
 	// Search for recent activities of this conversation
 	embedding, err := cm.ragSystem.ModelManager.GetModel(cm.ragSystem.QueryProcessor.ModelID)
 	if err != nil {
 		return cm.activityBuffer, err
 	}
-	
+
 	queryText := fmt.Sprintf("conversation_id:%s recent activities", cm.conversationID)
 	queryEmbedding, err := embedding.GenerateEmbedding(ctx, queryText)
 	if err != nil {
 		return cm.activityBuffer, err
 	}
-	
+
 	vectorQuery := types.VectorQuery{
 		Embedding:     queryEmbedding,
 		MaxResults:    needed,
 		MinSimilarity: 0.5,
 	}
-	
+
 	docs, err := cm.ragSystem.VectorDB.SearchSimilar(vectorQuery)
 	if err != nil {
 		return cm.activityBuffer, err
 	}
-	
+
 	// Parse documents back to activities
 	var storedActivities []ActivityEvent
 	for _, doc := range docs {
@@ -373,10 +426,10 @@ func (cm *ContextManager) GetRecentContext(ctx context.Context, maxItems int) ([
 			}
 		}
 	}
-	
+
 	// Combine stored activities with buffer
 	allActivities := append(storedActivities, cm.activityBuffer...)
-	
+
 	// Sort by timestamp and return most recent
 	if len(allActivities) > maxItems {
 		// Sort by timestamp (most recent first)
@@ -389,7 +442,7 @@ func (cm *ContextManager) GetRecentContext(ctx context.Context, maxItems int) ([
 		}
 		allActivities = allActivities[:maxItems]
 	}
-	
+
 	return allActivities, nil
 }
 
@@ -399,7 +452,7 @@ func (cm *ContextManager) GetContextualPrompt(ctx context.Context, currentQuery 
 	if cm.isSimpleQuery(currentQuery) {
 		return currentQuery, nil
 	}
-	
+
 	// Try AGI-enhanced prompt with chat mode (concise)
 	if cm.agiSystem != nil {
 		agiPrompt := cm.agiSystem.GetAGIPromptForQueryWithMode(ctx, currentQuery, "chat")
@@ -407,7 +460,7 @@ func (cm *ContextManager) GetContextualPrompt(ctx context.Context, currentQuery 
 			return agiPrompt, nil
 		}
 	}
-	
+
 	// Fallback to basic contextual prompt
 	return cm.getBasicContextualPrompt(ctx, currentQuery, includeRecentCount)
 }
@@ -415,30 +468,30 @@ func (cm *ContextManager) GetContextualPrompt(ctx context.Context, currentQuery 
 // isSimpleQuery determines if a query is simple enough to not need AGI enhancement
 func (cm *ContextManager) isSimpleQuery(query string) bool {
 	query = strings.ToLower(strings.TrimSpace(query))
-	
+
 	// Very short queries
 	if len(query) < 10 {
 		return true
 	}
-	
+
 	// Simple greetings and basic questions
 	simplePatterns := []string{
 		"hello", "hi", "hey", "thanks", "thank you", "ok", "okay", "yes", "no",
 		"what time", "what's up", "how are you", "good morning", "good night",
-		"status", "ping", "test", "help", 
+		"status", "ping", "test", "help",
 	}
-	
+
 	for _, pattern := range simplePatterns {
 		if strings.Contains(query, pattern) && len(query) < 50 {
 			return true
 		}
 	}
-	
+
 	// Single word queries
 	if len(strings.Fields(query)) <= 2 {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -449,20 +502,20 @@ func (cm *ContextManager) getBasicContextualPrompt(ctx context.Context, currentQ
 		log.Printf("Error getting recent context: %v", err)
 		return currentQuery, nil // Fallback to query without context
 	}
-	
+
 	if len(recentActivities) == 0 {
 		return currentQuery, nil
 	}
-	
+
 	// Build context from recent activities
 	var contextBuilder strings.Builder
 	contextBuilder.WriteString("Previous conversation context:\n")
-	
+
 	for i, activity := range recentActivities {
 		if i >= includeRecentCount {
 			break
 		}
-		
+
 		timeStr := activity.Timestamp.Format("15:04:05")
 		switch activity.Type {
 		case "query":
@@ -477,10 +530,10 @@ func (cm *ContextManager) getBasicContextualPrompt(ctx context.Context, currentQ
 			contextBuilder.WriteString(fmt.Sprintf("[%s] Action: %s\n", timeStr, activity.Content))
 		}
 	}
-	
+
 	contextBuilder.WriteString(fmt.Sprintf("\nCurrent query: %s\n", currentQuery))
 	contextBuilder.WriteString("\nPlease respond considering the conversation history above.")
-	
+
 	return contextBuilder.String(), nil
 }
 
@@ -492,24 +545,24 @@ func (cm *ContextManager) StartNewConversation(ctx context.Context) error {
 			log.Printf("Error summarizing conversation: %v", err)
 		}
 	}
-	
+
 	// Start new conversation
 	cm.conversationID = fmt.Sprintf("conv_%s_%d", cm.nodeID, time.Now().Unix())
 	cm.sessionStartTime = time.Now()
 	cm.activityBuffer = make([]ActivityEvent, 0)
-	
+
 	// Track the conversation start
 	cm.TrackAction(ctx, "conversation_start", "Started new conversation", map[string]interface{}{
 		"previous_conversation_events": len(cm.activityBuffer),
 	})
-	
+
 	return nil
 }
 
 // addToBuffer adds an activity to the buffer and manages buffer size
 func (cm *ContextManager) addToBuffer(event ActivityEvent) {
 	cm.activityBuffer = append(cm.activityBuffer, event)
-	
+
 	// If buffer is full, embed oldest activities and remove them from buffer
 	if len(cm.activityBuffer) > cm.maxBufferSize {
 		// Keep most recent half of buffer
@@ -522,26 +575,26 @@ func (cm *ContextManager) addToBuffer(event ActivityEvent) {
 func (cm *ContextManager) embedActivity(ctx context.Context, event ActivityEvent) error {
 	// Create a rich text representation of the activity
 	var textBuilder strings.Builder
-	
+
 	// Add structured information for better retrieval
 	textBuilder.WriteString(fmt.Sprintf("Node: %s\n", cm.nodeID))
 	textBuilder.WriteString(fmt.Sprintf("Conversation: %s\n", event.ConversationID))
 	textBuilder.WriteString(fmt.Sprintf("Type: %s\n", event.Type))
 	textBuilder.WriteString(fmt.Sprintf("Time: %s\n", event.Timestamp.Format(time.RFC3339)))
 	textBuilder.WriteString(fmt.Sprintf("Content: %s\n", event.Content))
-	
+
 	if event.Response != "" {
 		textBuilder.WriteString(fmt.Sprintf("Response: %s\n", event.Response))
 	}
-	
+
 	if event.Duration > 0 {
 		textBuilder.WriteString(fmt.Sprintf("Duration: %v\n", event.Duration))
 	}
-	
+
 	if !event.Success && event.ErrorMsg != "" {
 		textBuilder.WriteString(fmt.Sprintf("Error: %s\n", event.ErrorMsg))
 	}
-	
+
 	// Add metadata as searchable text
 	if event.Metadata != nil {
 		textBuilder.WriteString("Metadata:\n")
@@ -549,12 +602,12 @@ func (cm *ContextManager) embedActivity(ctx context.Context, event ActivityEvent
 			textBuilder.WriteString(fmt.Sprintf("  %s: %v\n", key, value))
 		}
 	}
-	
+
 	// Add JSON representation for exact reconstruction
 	eventJSON, _ := json.Marshal(event)
 	textBuilder.WriteString(fmt.Sprintf("\nJSON: %s", string(eventJSON)))
-	
-	// Create metadata for the document
+
+	// Create comprehensive metadata for the document with enhanced indexing
 	docMetadata := map[string]interface{}{
 		"node_id":         cm.nodeID,
 		"conversation_id": event.ConversationID,
@@ -562,13 +615,57 @@ func (cm *ContextManager) embedActivity(ctx context.Context, event ActivityEvent
 		"timestamp":       event.Timestamp.Unix(),
 		"event_id":        event.ID,
 		"success":         event.Success,
+		
+		// Enhanced indexing fields
+		"date":            event.Timestamp.Format("2006-01-02"),
+		"hour":            event.Timestamp.Format("15"),
+		"day_of_week":     event.Timestamp.Weekday().String(),
+		"content_length":  len(event.Content),
+		"has_response":    event.Response != "",
+		"response_length": len(event.Response),
+		
+		// Searchable content analysis
+		"content_words":   len(strings.Fields(event.Content)),
+		"content_hash":    cm.hashContent(event.Content),
+		
+		// Session and user context
+		"session_time":    event.Timestamp.Sub(cm.sessionStartTime).Minutes(),
+		
+		// Performance metrics
+		"duration_ms":     event.Duration.Milliseconds(),
+		"has_error":       !event.Success,
 	}
-	
+
+	// Add user-specific metadata if available
+	if cm.ragSystem.UserProfileManager != nil {
+		// Try to identify user from conversation
+		if userID := cm.extractUserIDFromEvent(event); userID != "" {
+			docMetadata["user_id"] = userID
+			docMetadata["user_hash"] = cm.hashUserID(userID)
+			
+			// Get user profile information
+			if profile := cm.ragSystem.UserProfileManager.GetOrCreateUserProfile(userID); profile != nil {
+				docMetadata["user_name"] = profile.Name
+				docMetadata["user_preferred_name"] = profile.PreferredName
+				docMetadata["user_conversations_count"] = len(profile.ConversationIDs)
+			}
+		}
+	}
+
+	// Add topic extraction for better categorization
+	if event.Type == "query" {
+		topics := cm.extractTopicsFromContent(event.Content)
+		if len(topics) > 0 {
+			docMetadata["topics"] = topics
+			docMetadata["topic_count"] = len(topics)
+		}
+	}
+
 	// Add original metadata
 	for key, value := range event.Metadata {
 		docMetadata[fmt.Sprintf("original_%s", key)] = value
 	}
-	
+
 	// Add to RAG system
 	return cm.ragSystem.AddDocument(ctx, textBuilder.String(), docMetadata)
 }
@@ -578,7 +675,7 @@ func (cm *ContextManager) summarizeCurrentConversation(ctx context.Context) erro
 	if len(cm.activityBuffer) == 0 {
 		return nil
 	}
-	
+
 	// Create conversation summary
 	summary := ConversationSummary{
 		ConversationID: cm.conversationID,
@@ -593,7 +690,7 @@ func (cm *ContextManager) summarizeCurrentConversation(ctx context.Context) erro
 			"duration_min": time.Since(cm.sessionStartTime).Minutes(),
 		},
 	}
-	
+
 	// Embed the conversation summary
 	summaryText := fmt.Sprintf("Conversation Summary for Node %s\n", cm.nodeID)
 	summaryText += fmt.Sprintf("Duration: %v\n", summary.EndTime.Sub(summary.StartTime))
@@ -601,10 +698,10 @@ func (cm *ContextManager) summarizeCurrentConversation(ctx context.Context) erro
 	summaryText += fmt.Sprintf("Topics: %s\n", strings.Join(summary.Topics, ", "))
 	summaryText += fmt.Sprintf("Key Activities: %s\n", strings.Join(summary.KeyActivities, "; "))
 	summaryText += fmt.Sprintf("Summary: %s\n", summary.Summary)
-	
+
 	summaryJSON, _ := json.Marshal(summary)
 	summaryText += fmt.Sprintf("\nJSON: %s", string(summaryJSON))
-	
+
 	return cm.ragSystem.AddDocument(ctx, summaryText, map[string]interface{}{
 		"type":            "conversation_summary",
 		"node_id":         cm.nodeID,
@@ -622,7 +719,7 @@ func (cm *ContextManager) generateEventID(eventType string) string {
 
 func (cm *ContextManager) extractTopics() []string {
 	topicMap := make(map[string]bool)
-	
+
 	for _, event := range cm.activityBuffer {
 		if event.Type == "query" {
 			// Simple keyword extraction - could be enhanced with NLP
@@ -633,7 +730,7 @@ func (cm *ContextManager) extractTopics() []string {
 				}
 			}
 		}
-		
+
 		// Extract from metadata
 		if queryType, ok := event.Metadata["query_type"]; ok {
 			if qt, ok := queryType.(string); ok {
@@ -641,24 +738,24 @@ func (cm *ContextManager) extractTopics() []string {
 			}
 		}
 	}
-	
+
 	topics := make([]string, 0, len(topicMap))
 	for topic := range topicMap {
 		topics = append(topics, topic)
 	}
-	
+
 	return topics
 }
 
 func (cm *ContextManager) extractKeyActivities() []string {
 	var activities []string
-	
+
 	for _, event := range cm.activityBuffer {
 		if event.Type == "action" {
 			activities = append(activities, event.Content)
 		}
 	}
-	
+
 	return activities
 }
 
@@ -666,11 +763,11 @@ func (cm *ContextManager) generateSummary() string {
 	if len(cm.activityBuffer) == 0 {
 		return "No activities in this conversation"
 	}
-	
+
 	queryCount := 0
 	actionCount := 0
 	errorCount := 0
-	
+
 	for _, event := range cm.activityBuffer {
 		switch event.Type {
 		case "query":
@@ -683,7 +780,7 @@ func (cm *ContextManager) generateSummary() string {
 			}
 		}
 	}
-	
+
 	return fmt.Sprintf("Conversation with %d queries, %d actions, and %d errors over %v",
 		queryCount, actionCount, errorCount, time.Since(cm.sessionStartTime).Truncate(time.Minute))
 }
@@ -696,4 +793,223 @@ func isCommonWordContext(word string) bool {
 		"can": true, "will": true, "would": true, "could": true, "should": true,
 	}
 	return commonWords[word]
+}
+
+// SetAGIAgentBridge sets the AGI agent bridge for the context manager
+func (cm *ContextManager) SetAGIAgentBridge(bridge *AGIAgentBridge) {
+	cm.agiAgentBridge = bridge
+}
+
+// GetAGIAgentBridge returns the AGI agent bridge
+func (cm *ContextManager) GetAGIAgentBridge() *AGIAgentBridge {
+	return cm.agiAgentBridge
+}
+
+// searchVectorDBForHistory searches the vector database for conversation history
+func (cm *ContextManager) searchVectorDBForHistory(ctx context.Context, limit int) []ActivityEvent {
+	events := make([]ActivityEvent, 0)
+
+	if cm.ragSystem == nil || cm.ragSystem.VectorDB == nil {
+		return events
+	}
+
+	// Check vector DB stats to ensure compatibility
+	stats := cm.ragSystem.VectorDB.GetStats()
+	if stats.Size == 0 {
+		// No documents in vector DB yet
+		return events
+	}
+
+	// Create search query for conversation history
+	searchQuery := fmt.Sprintf("conversation %s history events messages", cm.conversationID)
+
+	// Try to generate embedding for the search query using the same model as RAG
+	var embedding []float32
+	var err error
+
+	if cm.ragSystem.ModelManager != nil {
+		// Use the RAG system's default model to ensure dimension compatibility
+		model, err := cm.ragSystem.ModelManager.GetModel(cm.ragSystem.QueryProcessor.ModelID)
+		if err == nil {
+			embedding, err = model.GenerateEmbedding(ctx, searchQuery)
+			if err != nil {
+				log.Printf("[ContextManager] Failed to generate embedding with default model: %v", err)
+			}
+		}
+		
+		// If default model fails, try embedding models specifically
+		if len(embedding) == 0 {
+			models := cm.ragSystem.ModelManager.ListModels()
+			for _, modelInfo := range models {
+				model, err := cm.ragSystem.ModelManager.GetModel(modelInfo.ID)
+				if err == nil {
+					// Check if model supports embedding
+					for _, capability := range modelInfo.Capabilities {
+						if string(capability) == "embedding" {
+							embedding, err = model.GenerateEmbedding(ctx, searchQuery)
+							if err == nil && len(embedding) == stats.Dimensions {
+								break
+							}
+						}
+					}
+					if len(embedding) == stats.Dimensions {
+						break
+					}
+				}
+			}
+		}
+	}
+
+	if len(embedding) == 0 {
+		// Don't log error repeatedly - just return empty
+		return events
+	}
+
+	// Verify embedding dimensions match vector DB
+	if len(embedding) != stats.Dimensions {
+		// Don't log error repeatedly for dimension mismatch
+		return events
+	}
+
+	// Search vector database
+	query := types.VectorQuery{
+		Embedding:     embedding,
+		MaxResults:    limit * 2, // Get more results to filter
+		MinSimilarity: 0.3,       // Lower threshold for conversation history
+	}
+
+	results, err := cm.ragSystem.VectorDB.SearchSimilar(query)
+	if err != nil {
+		// Don't log repeated search failures
+		return events
+	}
+
+	// Convert vector documents back to ActivityEvents
+	for i, result := range results {
+		if i >= limit {
+			break
+		}
+
+		// Check if this is a conversation document
+		if strings.Contains(result.ID, cm.conversationID) {
+			// Parse metadata to reconstruct ActivityEvent
+			event := ActivityEvent{
+				Type:      "conversation_retrieval",
+				Content:   result.Text, // Use Text field instead of Content
+				Timestamp: time.Now(),  // Default timestamp - could be improved
+				Metadata: map[string]interface{}{
+					"retrieved_from": "vector_db",
+					"document_id":    result.ID,
+					"similarity":     result.Metadata["similarity"],
+				},
+			}
+
+			// Try to extract original event data from metadata
+			if eventType, ok := result.Metadata["event_type"].(string); ok {
+				event.Type = eventType
+			}
+			if timestamp, ok := result.Metadata["timestamp"].(string); ok {
+				if parsedTime, err := time.Parse(time.RFC3339, timestamp); err == nil {
+					event.Timestamp = parsedTime
+				}
+			}
+
+			events = append(events, event)
+		}
+	}
+
+	return events
+}
+
+// hashContent creates a hash of content for deduplication and indexing
+func (cm *ContextManager) hashContent(content string) string {
+	// Simple hash implementation for content fingerprinting
+	hash := 0
+	for _, char := range content {
+		hash = hash*31 + int(char)
+	}
+	
+	if hash < 0 {
+		hash = -hash
+	}
+	
+	return fmt.Sprintf("%08x", hash)
+}
+
+// extractUserIDFromEvent tries to extract user ID from event metadata
+func (cm *ContextManager) extractUserIDFromEvent(event ActivityEvent) string {
+	// Check metadata for user ID
+	if event.Metadata != nil {
+		if userID, ok := event.Metadata["user_id"].(string); ok {
+			return userID
+		}
+	}
+	
+	// Could implement more sophisticated user identification here
+	// For now, return empty if not found in metadata
+	return ""
+}
+
+// extractTopicsFromContent extracts topics from content text for better categorization
+func (cm *ContextManager) extractTopicsFromContent(content string) []string {
+	topics := make([]string, 0)
+	
+	// Simple keyword-based topic extraction
+	content = strings.ToLower(content)
+	words := strings.Fields(content)
+	
+	// Look for significant words (longer than 4 characters, not common words)
+	topicMap := make(map[string]bool)
+	for _, word := range words {
+		word = strings.Trim(word, ".,!?;:()")
+		if len(word) > 4 && !isCommonWordContext(word) {
+			// Check if it's a meaningful topic word
+			if cm.isMeaningfulTopic(word) {
+				topicMap[word] = true
+			}
+		}
+	}
+	
+	// Convert map to slice
+	for topic := range topicMap {
+		topics = append(topics, topic)
+	}
+	
+	// Limit to prevent metadata bloat
+	if len(topics) > 10 {
+		topics = topics[:10]
+	}
+	
+	return topics
+}
+
+// isMeaningfulTopic determines if a word is likely to be a meaningful topic
+func (cm *ContextManager) isMeaningfulTopic(word string) bool {
+	// Skip very common words even if they're long
+	skipWords := map[string]bool{
+		"something": true,
+		"anything":  true,
+		"everything": true,
+		"nothing":   true,
+		"someone":   true,
+		"everyone":  true,
+		"because":   true,
+		"through":   true,
+		"between":   true,
+		"without":   true,
+		"before":    true,
+		"after":     true,
+		"during":    true,
+		"please":    true,
+		"thanks":    true,
+		"thank":     true,
+	}
+	
+	if skipWords[word] {
+		return false
+	}
+	
+	// Include technical terms, proper nouns, and domain-specific words
+	// This is a simple heuristic - could be enhanced with NLP
+	return true
 }

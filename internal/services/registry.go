@@ -21,19 +21,19 @@ type ServiceRegistryManager struct {
 	consensusService ConsensusService
 	p2pService       P2PService
 	mutex            sync.RWMutex
-	
+
 	// Local services offered by this node
-	localServices    map[string]*types.ServiceOffering
-	
+	localServices map[string]*types.ServiceOffering
+
 	// Attestation storage
-	attestations     map[string]*types.ServiceAttestation
-	
+	attestations map[string]*types.ServiceAttestation
+
 	// Query routing
-	router           *ServiceRouter
-	
+	router *ServiceRouter
+
 	// Callbacks
-	onServiceUpdate  func(service *types.ServiceOffering)
-	onServiceRemove  func(serviceID string)
+	onServiceUpdate func(service *types.ServiceOffering)
+	onServiceRemove func(serviceID string)
 }
 
 // ConsensusService interface for interacting with consensus
@@ -70,7 +70,7 @@ func NewServiceRegistryManager(nodeID string, consensus ConsensusService, p2p P2
 
 	// Subscribe to service registry updates
 	p2p.Subscribe("service_registry", manager.handleServiceRegistryMessage)
-	
+
 	return manager
 }
 
@@ -203,7 +203,7 @@ func (srm *ServiceRegistryManager) CreateAttestation(
 	tokensUsed int64,
 	cost string,
 ) (*types.ServiceAttestation, error) {
-	
+
 	attestation := &types.ServiceAttestation{
 		ID:          uuid.New().String(),
 		QueryID:     queryID,
@@ -296,7 +296,7 @@ func (srm *ServiceRegistryManager) SendHeartbeat() {
 	for _, service := range srm.localServices {
 		service.LastSeen = now
 		service.UpdatedAt = now
-		
+
 		// Update in registry
 		if registryService, exists := srm.registry.Services[service.ID]; exists {
 			registryService.LastSeen = now
@@ -312,13 +312,13 @@ func (srm *ServiceRegistryManager) SendHeartbeat() {
 
 func (srm *ServiceRegistryManager) addServiceToRegistry(service *types.ServiceOffering) {
 	srm.registry.Services[service.ID] = service
-	
+
 	// Update node index
 	srm.registry.NodeIndex[service.NodeID] = append(srm.registry.NodeIndex[service.NodeID], service.ID)
-	
+
 	// Update type index
 	srm.registry.TypeIndex[service.Type] = append(srm.registry.TypeIndex[service.Type], service.ID)
-	
+
 	srm.registry.UpdatedAt = time.Now()
 
 	if srm.onServiceUpdate != nil {
@@ -404,7 +404,7 @@ func (srm *ServiceRegistryManager) broadcastServiceUpdate(service *types.Service
 		log.Printf("Failed to marshal service update: %v", err)
 		return
 	}
-	
+
 	if err := srm.p2pService.Broadcast("service_registry", data); err != nil {
 		log.Printf("Failed to broadcast service update: %v", err)
 	}
@@ -416,13 +416,13 @@ func (srm *ServiceRegistryManager) broadcastServiceRemoval(serviceID string) {
 		"service_id": serviceID,
 		"node_id":    srm.nodeID,
 	}
-	
+
 	data, err := json.Marshal(message)
 	if err != nil {
 		log.Printf("Failed to marshal service removal: %v", err)
 		return
 	}
-	
+
 	if err := srm.p2pService.Broadcast("service_registry", data); err != nil {
 		log.Printf("Failed to broadcast service removal: %v", err)
 	}
@@ -434,13 +434,13 @@ func (srm *ServiceRegistryManager) broadcastHeartbeat() {
 		"node_id": srm.nodeID,
 		"time":    time.Now().Unix(),
 	}
-	
+
 	data, err := json.Marshal(message)
 	if err != nil {
 		log.Printf("Failed to marshal heartbeat: %v", err)
 		return
 	}
-	
+
 	if err := srm.p2pService.Broadcast("service_heartbeat", data); err != nil {
 		log.Printf("Failed to broadcast heartbeat: %v", err)
 	}
@@ -452,13 +452,13 @@ func (srm *ServiceRegistryManager) signTransaction(tx *types.ServiceRegistryTran
 	if err != nil {
 		return err
 	}
-	
+
 	hash := sha256.Sum256(data)
 	tx.Hash = hex.EncodeToString(hash[:])
-	
+
 	// In a real implementation, this would use the node's private key
 	tx.Signature = "placeholder_signature_" + tx.Hash[:16]
-	
+
 	return nil
 }
 
@@ -468,11 +468,11 @@ func (srm *ServiceRegistryManager) signAttestation(attestation *types.ServiceAtt
 	if err != nil {
 		return err
 	}
-	
+
 	hash := sha256.Sum256(data)
 	// In a real implementation, this would use the node's private key
 	attestation.Signature = "placeholder_signature_" + hex.EncodeToString(hash[:])[:16]
-	
+
 	return nil
 }
 

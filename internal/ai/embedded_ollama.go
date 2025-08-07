@@ -17,13 +17,13 @@ import (
 // EmbeddedOllama manages an Ollama server process within the Cortex node lifecycle
 type EmbeddedOllama struct {
 	// Configuration
-	Host         string
-	Port         int
-	ModelsDir    string
-	LogLevel     string
-	GpuLayers    int
-	NumParallel  int
-	
+	Host        string
+	Port        int
+	ModelsDir   string
+	LogLevel    string
+	GpuLayers   int
+	NumParallel int
+
 	// Process management
 	cmd          *exec.Cmd
 	running      bool
@@ -31,12 +31,12 @@ type EmbeddedOllama struct {
 	startedAt    time.Time
 	healthCheck  *time.Ticker
 	shutdownChan chan struct{}
-	
+
 	// Callbacks
-	OnStarted    func()
-	OnStopped    func()
-	OnHealthy    func()
-	OnUnhealthy  func(error)
+	OnStarted   func()
+	OnStopped   func()
+	OnHealthy   func()
+	OnUnhealthy func(error)
 }
 
 // EmbeddedOllamaConfig configures the embedded Ollama instance
@@ -82,11 +82,11 @@ func NewEmbeddedOllama(config EmbeddedOllamaConfig) *EmbeddedOllama {
 func (e *EmbeddedOllama) Start(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	
+
 	if e.running {
 		return fmt.Errorf("ollama server is already running")
 	}
-	
+
 	// Check if Ollama is already running externally
 	if e.isHealthy() {
 		log.Printf("Ollama server already running on %s:%d", e.Host, e.Port)
@@ -97,63 +97,63 @@ func (e *EmbeddedOllama) Start(ctx context.Context) error {
 		}
 		return nil
 	}
-	
+
 	// Check if ollama binary exists
 	ollamaPath, err := exec.LookPath("ollama")
 	if err != nil {
 		return fmt.Errorf("ollama binary not found in PATH: %w", err)
 	}
-	
+
 	// Prepare environment
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("OLLAMA_HOST=%s:%d", e.Host, e.Port))
 	env = append(env, fmt.Sprintf("OLLAMA_MODELS=%s", e.ModelsDir))
 	env = append(env, fmt.Sprintf("OLLAMA_LOGS=%s", e.LogLevel))
 	env = append(env, fmt.Sprintf("OLLAMA_NUM_PARALLEL=%d", e.NumParallel))
-	
+
 	if e.GpuLayers >= 0 {
 		env = append(env, fmt.Sprintf("OLLAMA_GPU_LAYERS=%d", e.GpuLayers))
 	}
-	
+
 	// Create command
 	e.cmd = exec.CommandContext(ctx, ollamaPath, "serve")
 	e.cmd.Env = env
 	e.cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true, // Create new process group for clean shutdown
 	}
-	
+
 	// Redirect logs if needed
 	if e.LogLevel == "debug" {
 		e.cmd.Stdout = os.Stdout
 		e.cmd.Stderr = os.Stderr
 	}
-	
+
 	// Start the process
 	if err := e.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start ollama server: %w", err)
 	}
-	
+
 	e.running = true
 	e.startedAt = time.Now()
-	
+
 	log.Printf("Started embedded Ollama server (PID: %d) on %s:%d", e.cmd.Process.Pid, e.Host, e.Port)
-	
+
 	// Wait for server to be ready
 	if err := e.waitForReady(ctx, 30*time.Second); err != nil {
 		e.Stop()
 		return fmt.Errorf("ollama server failed to become ready: %w", err)
 	}
-	
+
 	// Start health monitoring
 	go e.startHealthMonitoring()
-	
+
 	// Monitor process
 	go e.monitorProcess()
-	
+
 	if e.OnStarted != nil {
 		e.OnStarted()
 	}
-	
+
 	return nil
 }
 
@@ -161,32 +161,32 @@ func (e *EmbeddedOllama) Start(ctx context.Context) error {
 func (e *EmbeddedOllama) Stop() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	
+
 	if !e.running {
 		return nil
 	}
-	
+
 	log.Printf("Stopping embedded Ollama server...")
-	
+
 	// Stop health monitoring
 	close(e.shutdownChan)
 	if e.healthCheck != nil {
 		e.healthCheck.Stop()
 	}
-	
+
 	// Gracefully terminate the process
 	if e.cmd != nil && e.cmd.Process != nil {
 		// First try SIGTERM
 		if err := e.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 			log.Printf("Failed to send SIGTERM to ollama: %v", err)
 		}
-		
+
 		// Wait up to 10 seconds for graceful shutdown
 		done := make(chan error, 1)
 		go func() {
 			done <- e.cmd.Wait()
 		}()
-		
+
 		select {
 		case err := <-done:
 			if err != nil {
@@ -201,16 +201,16 @@ func (e *EmbeddedOllama) Stop() error {
 			<-done // Wait for process to actually exit
 		}
 	}
-	
+
 	e.running = false
 	e.cmd = nil
-	
+
 	log.Printf("Embedded Ollama server stopped")
-	
+
 	if e.OnStopped != nil {
 		e.OnStopped()
 	}
-	
+
 	return nil
 }
 
@@ -240,10 +240,10 @@ func (e *EmbeddedOllama) GetUptime() time.Duration {
 func (e *EmbeddedOllama) waitForReady(ctx context.Context, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	
+
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -271,7 +271,7 @@ func (e *EmbeddedOllama) isHealthy() bool {
 // startHealthMonitoring starts periodic health checks
 func (e *EmbeddedOllama) startHealthMonitoring() {
 	e.healthCheck = time.NewTicker(30 * time.Second)
-	
+
 	for {
 		select {
 		case <-e.healthCheck.C:
@@ -297,17 +297,17 @@ func (e *EmbeddedOllama) monitorProcess() {
 	if e.cmd == nil {
 		return
 	}
-	
+
 	err := e.cmd.Wait()
-	
+
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	
+
 	if e.running {
 		log.Printf("Embedded Ollama process exited unexpectedly: %v", err)
 		e.running = false
 		e.cmd = nil
-		
+
 		if e.OnStopped != nil {
 			e.OnStopped()
 		}
@@ -319,10 +319,10 @@ func (e *EmbeddedOllama) Restart(ctx context.Context) error {
 	if err := e.Stop(); err != nil {
 		return fmt.Errorf("failed to stop ollama: %w", err)
 	}
-	
+
 	// Wait a moment before restarting
 	time.Sleep(2 * time.Second)
-	
+
 	return e.Start(ctx)
 }
 
@@ -331,18 +331,18 @@ func (e *EmbeddedOllama) PullModel(ctx context.Context, model string) error {
 	if !e.IsRunning() {
 		return fmt.Errorf("ollama server is not running")
 	}
-	
+
 	ollamaPath, err := exec.LookPath("ollama")
 	if err != nil {
 		return fmt.Errorf("ollama binary not found: %w", err)
 	}
-	
+
 	env := []string{fmt.Sprintf("OLLAMA_HOST=%s", e.GetAddress())}
 	cmd := exec.CommandContext(ctx, ollamaPath, "pull", model)
 	cmd.Env = append(os.Environ(), env...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	
+
 	log.Printf("Pulling model %s...", model)
 	return cmd.Run()
 }
@@ -352,28 +352,28 @@ func (e *EmbeddedOllama) ListModels(ctx context.Context) ([]string, error) {
 	if !e.IsRunning() {
 		return nil, fmt.Errorf("ollama server is not running")
 	}
-	
+
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(fmt.Sprintf("%s/api/tags", e.GetAddress()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	var result struct {
 		Models []struct {
 			Name string `json:"name"`
 		} `json:"models"`
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	models := make([]string, len(result.Models))
 	for i, model := range result.Models {
 		models[i] = model.Name
 	}
-	
+
 	return models, nil
 }

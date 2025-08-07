@@ -131,7 +131,7 @@ func tryRegisterOllamaModels(manager *ai.ModelManager) error {
 	config := ai.DefaultOllamaConfig()
 
 	// Create a test model to check connectivity
-	testModel := ai.NewOllamaModel("llama2", config)
+	testModel := ai.NewOllamaModel("cogito", config)
 
 	// Check if Ollama is healthy
 	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
@@ -141,8 +141,8 @@ func tryRegisterOllamaModels(manager *ai.ModelManager) error {
 		return fmt.Errorf("Ollama service not available")
 	}
 
-	// Register default models - use cogito which is available
-	models := []string{"cogito", "llama2", "mistral", "codellama"}
+	// Register default models - use only available models
+	models := []string{"cogito", "llama3.2:3b", "llama3.2:1b"}
 	for _, modelName := range models {
 		model := ai.NewOllamaModel(modelName, config)
 		manager.RegisterModel(model)
@@ -194,10 +194,10 @@ func (s *SolverAgent) Process(ctx context.Context, query *types.Query) (*types.R
 			"model":    s.config.DefaultModel,
 		})
 
-		// Try consciousness-based processing first
-		if consciousnessRuntime := s.ragSystem.ContextManager.GetConsciousnessRuntime(); consciousnessRuntime != nil {
-			log.Printf("Processing query with consciousness runtime: %s", query.Text)
-			response, err := consciousnessRuntime.ProcessQuery(ctx, query)
+		// Try AGI consciousness-based processing first
+		if agiSystem := s.ragSystem.GetAGISystem(); agiSystem != nil {
+			log.Printf("Processing query with AGI consciousness runtime: %s", query.Text)
+			response, err := agiSystem.ProcessQueryWithConsciousness(ctx, query)
 			if err == nil {
 				success = true
 				return response, nil

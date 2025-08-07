@@ -59,7 +59,7 @@ func main() {
 	}
 
 	// Add flags to serve command
-	serveCmd.Flags().Int("port", 8080, "API server port to listen on")
+	serveCmd.Flags().Int("port", 4891, "API server port to listen on")
 	serveCmd.Flags().Int("p2p-port", 4001, "P2P network port to listen on")
 	serveCmd.Flags().String("bootstrap-peers", "", "Comma-separated list of bootstrap peer addresses")
 	serveCmd.Flags().String("node-name", "", "Node name for identification (default: auto-generated)")
@@ -152,17 +152,7 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 	// Start processing transactions
 	go cs.ProcessTransactions(ctx)
 
-	// Create a solver agent
-	solverConfig := &agents.SolverConfig{
-		PredictorConfig: &agents.PredictorConfig{
-			Timeout:      10 * time.Second,
-			MaxTokens:    1024,
-			Temperature:  0.7,
-			CacheResults: true,
-		},
-		// DefaultModel will be auto-selected by SolverAgent
-	}
-	solverAgent := agents.NewSolverAgent(solverConfig)
+	// Solver agent configuration will be handled by the AgentRegistry
 
 	// Create a RAG system with the actual node ID for context tracking
 	ragSystem := rag.NewRAGSystemWithNodeID(384, nodeID) // 384 dimensions for the vector space
@@ -242,10 +232,7 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 		}
 	}
 
-	// Connect solver agent with economic engine for query result tracking
-	solverAgent.SetEconomicEngine(economicEngine)
-	solverAgent.SetNodeID(nodePeerID)
-	log.Println("Connected solver agent with economic engine for query result tracking.")
+	// Agent connections will be handled by the AgentRegistry
 
 	// Initialize AGI blockchain recorder
 	agiRecorder := consensus.NewAGIRecorder(cs, nodeID)
@@ -267,31 +254,29 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 		}
 	}
 
-	// Connect solver agent with RAG system for context tracking
-	solverAgent.SetRAGSystem(ragSystem)
-	log.Println("Connected solver agent with RAG system for persistent context tracking.")
+	// Economic engine and RAG system connections will be handled by the AgentRegistry
 
 	// Create service registry manager
 	serviceRegistry := services.NewServiceRegistryManager(nodePeerID, cs, node)
 	log.Printf("Service registry manager initialized for node %s", nodePeerID[:12]+"...")
 
-	// Create an API server
-	server := api.NewServer(node, cs, solverAgent, ragSystem, economicEngine, serviceRegistry)
+	// Create an event-driven API server (the only server we need)
+	server := api.NewEventDrivenServer(node, cs, ragSystem, economicEngine, serviceRegistry, nil)
 
-	// Connect EconomicQueryProcessor with the consensus bridge
-	if server.EconomicQueryProc != nil {
-		server.EconomicQueryProc.SetConsensusBridge(economicBridge)
-	}
-
-	// Start the API server
+	// Start the event-driven API server
 	go func() {
 		address := fmt.Sprintf(":%d", port)
+		log.Printf("Starting event-driven API server on %s", address)
 		if err := server.Start(address); err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	log.Printf("Cortex node started and listening on port %d\n", port)
+	log.Printf("🚀 Cortex node started successfully!")
+	log.Printf("📡 API server listening on port %d", port)
+	log.Printf("🔗 P2P node listening on port %d", p2pPort)
+	log.Printf("🧠 Event-driven architecture initialized")
+	log.Printf("💬 WebSocket endpoint: ws://localhost:%d/ws", port)
 
 	// Wait for peers if bootstrap peers are provided
 	if len(bootstrapPeers) > 0 {
@@ -311,22 +296,56 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 	// Wait for interrupt signal
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	<-sigCh
+
+	select {
+	case sig := <-sigCh:
+		log.Printf("Received signal: %v", sig)
+	case <-ctx.Done():
+		log.Println("Context cancelled")
+	}
 
 	log.Println("Shutting down...")
 
-	// Stop the API server
-	if err := server.Stop(ctx); err != nil {
-		log.Printf("Error stopping API server: %s\n", err)
+	// Cancel context to stop all goroutines
+	cancel()
+
+	// Create a timeout context for shutdown
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	// Stop the API server with timeout
+	done := make(chan error, 1)
+	go func() {
+		done <- server.Stop()
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			log.Printf("Error stopping API server: %s\n", err)
+		}
+	case <-shutdownCtx.Done():
+		log.Println("API server shutdown timed out")
 	}
 
 	// Stop reward distributor
 	economicEngine.StopRewardDistributor()
 
-	// Stop the P2P node
-	if err := node.Stop(); err != nil {
-		log.Printf("Error stopping P2P node: %s\n", err)
+	// Stop the P2P node with timeout
+	go func() {
+		done <- node.Stop()
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			log.Printf("Error stopping P2P node: %s\n", err)
+		}
+	case <-shutdownCtx.Done():
+		log.Println("P2P node shutdown timed out")
 	}
+
+	log.Println("Shutdown complete")
 }
 
 func runTests() {

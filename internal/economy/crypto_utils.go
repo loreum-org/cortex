@@ -12,12 +12,12 @@ import (
 func DeriveAddressFromPeerID(peerID peer.ID) string {
 	// Get the bytes of the peer ID
 	peerBytes := []byte(peerID)
-	
+
 	// Hash the peer ID to create a deterministic address
 	hasher := sha256.New()
 	hasher.Write(peerBytes)
 	addressHash := hasher.Sum(nil)
-	
+
 	// Format as Ethereum-style address (0x + first 20 bytes as hex)
 	addressBytes := addressHash[:20]
 	return fmt.Sprintf("0x%s", hex.EncodeToString(addressBytes))

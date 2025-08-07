@@ -607,7 +607,7 @@ func TestSolverAgent_ExternalModelRegistration(t *testing.T) {
 	t.Run("OllamaModelRegistrationAttempt", func(t *testing.T) {
 		// To test this properly, one would need a running Ollama instance.
 		// We'll check if the code attempts registration without panic.
-		// If OLLAMA_HOST is set and Ollama is running, models like "ollama-llama2" might appear.
+		// If OLLAMA_HOST is set and Ollama is running, models like "ollama-cogito" might appear.
 		// For a unit test, we can't assume Ollama is running.
 		// The NewSolverAgent already logs warnings if it fails.
 		// We can check that if OLLAMA_HOST is NOT set, it doesn't register ollama models.

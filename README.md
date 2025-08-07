@@ -40,10 +40,10 @@ The Loreum Cortex node consists of three primary layers:
 
 4. Run the node:
    ```
-   ./cortex serve --port 8080
+   ./cortex serve --port 4891
    ```
 
-   You can specify a custom port using the `--port` flag.
+   You can specify a custom port using the `--port` flag. Default is 4891.
 
 ## Documentation
 

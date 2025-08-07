@@ -61,67 +61,67 @@ type EconomicTransactionData struct {
 
 // AGITransactionData contains AGI-specific transaction data
 type AGITransactionData struct {
-	NodeID           string                    `json:"node_id"`
-	AGIVersion       int                       `json:"agi_version"`
-	IntelligenceLevel float64                  `json:"intelligence_level"`
-	DomainKnowledge  map[string]float64        `json:"domain_knowledge"` // domain -> expertise level
-	LearningMetrics  *AGILearningMetrics       `json:"learning_metrics,omitempty"`
-	EvolutionEvent   *AGIEvolutionEvent        `json:"evolution_event,omitempty"`
-	Capabilities     map[string]float64        `json:"capabilities,omitempty"`
-	RecentInsights   []string                  `json:"recent_insights,omitempty"`
-	UpdateType       string                    `json:"update_type"` // "knowledge_update", "evolution", "capability_growth"
-	Signature        []byte                    `json:"signature,omitempty"` // Node signature for authenticity
+	NodeID            string              `json:"node_id"`
+	AGIVersion        int                 `json:"agi_version"`
+	IntelligenceLevel float64             `json:"intelligence_level"`
+	DomainKnowledge   map[string]float64  `json:"domain_knowledge"` // domain -> expertise level
+	LearningMetrics   *AGILearningMetrics `json:"learning_metrics,omitempty"`
+	EvolutionEvent    *AGIEvolutionEvent  `json:"evolution_event,omitempty"`
+	Capabilities      map[string]float64  `json:"capabilities,omitempty"`
+	RecentInsights    []string            `json:"recent_insights,omitempty"`
+	UpdateType        string              `json:"update_type"`         // "knowledge_update", "evolution", "capability_growth"
+	Signature         []byte              `json:"signature,omitempty"` // Node signature for authenticity
 }
 
 // AGILearningMetrics represents learning performance metrics
 type AGILearningMetrics struct {
-	ConceptsLearned     int                `json:"concepts_learned"`
-	PatternsIdentified  int                `json:"patterns_identified"`
-	LearningRate        float64            `json:"learning_rate"`
-	KnowledgeGrowth     map[string]float64 `json:"knowledge_growth"` // domain -> growth rate
-	LastLearningEvent   int64              `json:"last_learning_event"`
-	TotalInteractions   int64              `json:"total_interactions"`
+	ConceptsLearned    int                `json:"concepts_learned"`
+	PatternsIdentified int                `json:"patterns_identified"`
+	LearningRate       float64            `json:"learning_rate"`
+	KnowledgeGrowth    map[string]float64 `json:"knowledge_growth"` // domain -> growth rate
+	LastLearningEvent  int64              `json:"last_learning_event"`
+	TotalInteractions  int64              `json:"total_interactions"`
 }
 
 // AGIEvolutionEvent represents a significant AGI evolution
 type AGIEvolutionEvent struct {
-	TriggerType         string             `json:"trigger_type"`
-	IntelligenceGain    float64            `json:"intelligence_gain"`
-	DomainsAffected     []string           `json:"domains_affected"`
-	CapabilitiesGained  []string           `json:"capabilities_gained"`
-	EvolutionDescription string            `json:"evolution_description"`
-	Impact              float64            `json:"impact"` // 0.0 to 1.0
+	TriggerType          string   `json:"trigger_type"`
+	IntelligenceGain     float64  `json:"intelligence_gain"`
+	DomainsAffected      []string `json:"domains_affected"`
+	CapabilitiesGained   []string `json:"capabilities_gained"`
+	EvolutionDescription string   `json:"evolution_description"`
+	Impact               float64  `json:"impact"` // 0.0 to 1.0
 }
 
 // NetworkAGISnapshot represents AGI state of all nodes at a point in time
 type NetworkAGISnapshot struct {
-	Timestamp        int64                        `json:"timestamp"`
-	BlockHash        string                       `json:"block_hash"`
-	TotalNodes       int                          `json:"total_nodes"`
-	NodeAGIStates    map[string]*NodeAGIState     `json:"node_agi_states"`
-	NetworkMetrics   *NetworkAGIMetrics           `json:"network_metrics"`
-	DomainLeaders    map[string]string            `json:"domain_leaders"` // domain -> node_id with highest expertise
+	Timestamp      int64                    `json:"timestamp"`
+	BlockHash      string                   `json:"block_hash"`
+	TotalNodes     int                      `json:"total_nodes"`
+	NodeAGIStates  map[string]*NodeAGIState `json:"node_agi_states"`
+	NetworkMetrics *NetworkAGIMetrics       `json:"network_metrics"`
+	DomainLeaders  map[string]string        `json:"domain_leaders"` // domain -> node_id with highest expertise
 }
 
 // NodeAGIState represents the AGI state of a specific node
 type NodeAGIState struct {
-	NodeID           string             `json:"node_id"`
-	IntelligenceLevel float64           `json:"intelligence_level"`
-	DomainKnowledge  map[string]float64 `json:"domain_knowledge"`
-	LastUpdate       int64              `json:"last_update"`
-	Version          int                `json:"version"`
-	Reputation       float64            `json:"reputation"`
-	TotalQueries     int64              `json:"total_queries"`
-	SuccessRate      float64            `json:"success_rate"`
+	NodeID            string             `json:"node_id"`
+	IntelligenceLevel float64            `json:"intelligence_level"`
+	DomainKnowledge   map[string]float64 `json:"domain_knowledge"`
+	LastUpdate        int64              `json:"last_update"`
+	Version           int                `json:"version"`
+	Reputation        float64            `json:"reputation"`
+	TotalQueries      int64              `json:"total_queries"`
+	SuccessRate       float64            `json:"success_rate"`
 }
 
 // NetworkAGIMetrics represents network-wide AGI metrics
 type NetworkAGIMetrics struct {
-	AverageIntelligence    float64            `json:"average_intelligence"`
-	TotalKnowledgeDomains  int                `json:"total_knowledge_domains"`
-	DomainDistribution     map[string]int     `json:"domain_distribution"` // domain -> count of nodes with expertise
-	NetworkLearningRate    float64            `json:"network_learning_rate"`
-	CollectiveIntelligence float64            `json:"collective_intelligence"`
+	AverageIntelligence     float64            `json:"average_intelligence"`
+	TotalKnowledgeDomains   int                `json:"total_knowledge_domains"`
+	DomainDistribution      map[string]int     `json:"domain_distribution"` // domain -> count of nodes with expertise
+	NetworkLearningRate     float64            `json:"network_learning_rate"`
+	CollectiveIntelligence  float64            `json:"collective_intelligence"`
 	KnowledgeSpecialization map[string]float64 `json:"knowledge_specialization"` // domain -> specialization score
 }
 

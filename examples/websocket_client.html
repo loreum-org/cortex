@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cortex WebSocket API Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .messages {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .message {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .message.sent { background-color: #cce5ff; }
+        .message.received { background-color: #d4edda; }
+        .message.error { background-color: #f8d7da; }
+        .subscriptions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .subscription {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Cortex WebSocket API Client</h1>
+    
+    <div class="container">
+        <div id="status" class="status disconnected">
+            ❌ Disconnected
+        </div>
+        
+        <div class="controls">
+            <button id="connect" onclick="connect()">Connect</button>
+            <button id="disconnect" onclick="disconnect()" disabled>Disconnect</button>
+            <button onclick="getStatus()">Get Status</button>
+            <button onclick="getModels()">Get Models</button>
+            <button onclick="getAgents()">Get Agents</button>
+            <button onclick="getMetrics()">Get Metrics</button>
+        </div>
+        
+        <div class="controls">
+            <button onclick="getNodeInfo()">Get Node Info</button>
+            <button onclick="getPeers()">Get Peers</button>
+            <button onclick="getServices()">Get Services</button>
+            <button onclick="getTransactions()">Get Transactions</button>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="queryInput" placeholder="Enter your query here..." />
+            <button onclick="submitQuery()">Submit Query</button>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="modelName" placeholder="Model name (e.g., llama3.2:3b)" />
+            <button onclick="downloadModel()">Download Model</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h3>🔔 Real-time Subscriptions</h3>
+        <div class="subscriptions">
+            <div class="subscription">
+                <input type="checkbox" id="metrics" onchange="toggleSubscription('metrics')">
+                <label for="metrics">Metrics</label>
+            </div>
+            <div class="subscription">
+                <input type="checkbox" id="consciousness" onchange="toggleSubscription('consciousness')">
+                <label for="consciousness">Consciousness</label>
+            </div>
+            <div class="subscription">
+                <input type="checkbox" id="agents" onchange="toggleSubscription('agents')">
+                <label for="agents">Agents</label>
+            </div>
+            <div class="subscription">
+                <input type="checkbox" id="models" onchange="toggleSubscription('models')">
+                <label for="models">Models</label>
+            </div>
+            <div class="subscription">
+                <input type="checkbox" id="systemEvents" onchange="toggleSubscription('systemEvents')">
+                <label for="systemEvents">System Events</label>
+            </div>
+            <div class="subscription">
+                <input type="checkbox" id="queryProgress" onchange="toggleSubscription('queryProgress')">
+                <label for="queryProgress">Query Progress</label>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h3>📨 Messages</h3>
+        <div id="messages" class="messages"></div>
+        <button onclick="clearMessages()" style="margin-top: 10px;">Clear Messages</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageId = 1;
+        let pendingRequests = new Map();
+
+        function generateId() {
+            return `msg_${messageId++}_${Date.now()}`;
+        }
+
+        function connect() {
+            if (ws) {
+                ws.close();
+            }
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.hostname}:8080/ws`;
+            
+            addMessage('🔄 Connecting to ' + wsUrl, 'sent');
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function(event) {
+                updateStatus(true);
+                addMessage('✅ Connected successfully', 'received');
+                document.getElementById('connect').disabled = true;
+                document.getElementById('disconnect').disabled = false;
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleMessage(message);
+                } catch (e) {
+                    addMessage('❌ Failed to parse message: ' + event.data, 'error');
+                }
+            };
+            
+            ws.onclose = function(event) {
+                updateStatus(false);
+                addMessage('❌ Connection closed', 'error');
+                document.getElementById('connect').disabled = false;
+                document.getElementById('disconnect').disabled = true;
+            };
+            
+            ws.onerror = function(error) {
+                addMessage('❌ WebSocket error: ' + error, 'error');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            if (connected) {
+                statusEl.className = 'status connected';
+                statusEl.textContent = '✅ Connected';
+            } else {
+                statusEl.className = 'status disconnected';
+                statusEl.textContent = '❌ Disconnected';
+            }
+        }
+
+        function sendMessage(type, method = null, data = null) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('❌ Not connected', 'error');
+                return null;
+            }
+            
+            const id = generateId();
+            const message = {
+                id: id,
+                type: type,
+                method: method,
+                data: data,
+                timestamp: new Date().toISOString()
+            };
+            
+            ws.send(JSON.stringify(message));
+            addMessage(`📤 ${type.toUpperCase()}: ${method || 'N/A'}`, 'sent');
+            
+            if (type === 'request') {
+                pendingRequests.set(id, { method, timestamp: Date.now() });
+            }
+            
+            return id;
+        }
+
+        function handleMessage(message) {
+            const { id, type, data, error, timestamp } = message;
+            
+            if (error) {
+                addMessage(`❌ ERROR (${id}): ${error}`, 'error');
+                return;
+            }
+            
+            switch (type) {
+                case 'response':
+                    handleResponse(id, data);
+                    break;
+                case 'event':
+                    handleEvent(data);
+                    break;
+                case 'consciousness_update':
+                    handleConsciousnessUpdate(data);
+                    break;
+                default:
+                    addMessage(`📥 ${type.toUpperCase()}: ${JSON.stringify(data, null, 2)}`, 'received');
+            }
+        }
+
+        function handleResponse(id, data) {
+            const request = pendingRequests.get(id);
+            if (request) {
+                const duration = Date.now() - request.timestamp;
+                addMessage(`📥 RESPONSE (${request.method}) [${duration}ms]: ${JSON.stringify(data, null, 2)}`, 'received');
+                pendingRequests.delete(id);
+            } else {
+                addMessage(`📥 RESPONSE: ${JSON.stringify(data, null, 2)}`, 'received');
+            }
+        }
+
+        function handleEvent(data) {
+            addMessage(`🔔 EVENT: ${JSON.stringify(data, null, 2)}`, 'received');
+        }
+
+        function handleConsciousnessUpdate(data) {
+            addMessage(`🧠 CONSCIOUSNESS: Cycle ${data.state?.consciousness_state?.cycle_count || 'N/A'}, Energy: ${data.state?.consciousness_state?.energy_level || 'N/A'}`, 'received');
+        }
+
+        function addMessage(text, type) {
+            const messagesEl = document.getElementById('messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            messagesEl.appendChild(messageEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        // API Methods
+        function getStatus() {
+            sendMessage('request', 'getStatus');
+        }
+
+        function getModels() {
+            sendMessage('request', 'getModels');
+        }
+
+        function getAgents() {
+            sendMessage('request', 'getAgents');
+        }
+
+        function getMetrics() {
+            sendMessage('request', 'getMetrics');
+        }
+
+        function getNodeInfo() {
+            sendMessage('request', 'getNodeInfo');
+        }
+
+        function getPeers() {
+            sendMessage('request', 'getPeers');
+        }
+
+        function getServices() {
+            sendMessage('request', 'getServices');
+        }
+
+        function getTransactions() {
+            sendMessage('request', 'getTransactions');
+        }
+
+        function submitQuery() {
+            const queryInput = document.getElementById('queryInput');
+            const query = queryInput.value.trim();
+            if (!query) {
+                addMessage('❌ Please enter a query', 'error');
+                return;
+            }
+            
+            sendMessage('request', 'query', {
+                query: query,
+                use_rag: true
+            });
+            
+            queryInput.value = '';
+        }
+
+        function downloadModel() {
+            const modelInput = document.getElementById('modelName');
+            const modelName = modelInput.value.trim();
+            if (!modelName) {
+                addMessage('❌ Please enter a model name', 'error');
+                return;
+            }
+            
+            sendMessage('request', 'downloadModel', {
+                model_name: modelName
+            });
+            
+            modelInput.value = '';
+        }
+
+        function toggleSubscription(eventType) {
+            const checkbox = document.getElementById(eventType);
+            const isSubscribed = checkbox.checked;
+            
+            if (isSubscribed) {
+                sendMessage('subscribe', null, eventType);
+            } else {
+                sendMessage('unsubscribe', null, eventType);
+            }
+        }
+
+        // Auto-connect on page load
+        window.onload = function() {
+            // Optionally auto-connect
+            // connect();
+        };
+    </script>
+</body>
+</html>

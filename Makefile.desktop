@@ -1,0 +1,167 @@
+# Makefile for Loreum Desktop Application
+
+# Variables
+BINARY_NAME=loreum-desktop
+BUILD_DIR=./build/bin
+FRONTEND_DIR=./frontend
+DESKTOP_FRONTEND_DIR=./cmd/desktop/frontend
+VERSION=$(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.1.0")
+COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
+
+# Build flags
+LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.Commit=$(COMMIT) -X main.BuildTime=$(BUILD_TIME)"
+
+.PHONY: all build-web build-desktop clean dev install-deps check-deps help
+
+# Default target
+all: build-desktop
+
+# Install dependencies
+install-deps:
+	@echo "Installing dependencies..."
+	@echo "Installing Wails..."
+	@go install github.com/wailsapp/wails/v2/cmd/wails@latest
+	@echo "Installing web dependencies..."
+	@cd $(FRONTEND_DIR) && npm install
+	@echo "Dependencies installed successfully"
+
+# Check if dependencies are installed
+check-deps:
+	@echo "Checking dependencies..."
+	@export PATH=$$PATH:$(shell go env GOPATH)/bin && which wails > /dev/null || (echo "Wails not found. Run 'make install-deps' first." && exit 1)
+	@test -d $(FRONTEND_DIR)/node_modules || (echo "Web dependencies not found. Run 'make install-deps' first." && exit 1)
+	@echo "All dependencies are installed"
+
+# Build web frontend
+build-web:
+	@echo "Building web frontend..."
+	@cd $(FRONTEND_DIR) && npm run build
+	@echo "Web frontend built successfully"
+
+# Copy web build to desktop frontend directory
+copy-web: build-web
+	@echo "Copying web build to desktop frontend directory..."
+	@mkdir -p $(DESKTOP_FRONTEND_DIR)
+	@cp -r $(FRONTEND_DIR)/dist/* $(DESKTOP_FRONTEND_DIR)/
+	@echo "Web build copied successfully"
+
+# Build desktop application
+build-desktop: check-deps copy-web
+	@echo "Building cortexd server..."
+	@go build -o cortexd ./cmd/cortexd
+	@echo "Building desktop application..."
+	@mkdir -p $(BUILD_DIR)
+	@export PATH=$$PATH:$(shell go env GOPATH)/bin && wails build -clean -s -platform darwin/arm64,darwin/amd64,linux/amd64,windows/amd64
+	@echo "Copying cortexd to app bundles..."
+	@find $(BUILD_DIR) -name "*.app" -exec cp cortexd {}/Contents/MacOS/ \; 2>/dev/null || true
+	@find $(BUILD_DIR) -name "*.exe" -exec cp cortexd.exe {}.cortexd \; 2>/dev/null || true
+	@find $(BUILD_DIR) -type f -executable -name "$(BINARY_NAME)" -exec cp cortexd `dirname {}`/ \; 2>/dev/null || true
+	@echo "Desktop application built successfully"
+	@echo "Binaries available in $(BUILD_DIR)/"
+
+# Build for current platform only (faster for development)
+build-dev: check-deps copy-web
+	@echo "Building cortexd server..."
+	@go build -o cortexd ./cmd/cortexd
+	@echo "Building desktop application for current platform..."
+	@mkdir -p $(BUILD_DIR)
+	@export PATH=$$PATH:$(shell go env GOPATH)/bin && wails build -clean -s
+	@echo "Copying cortexd to app bundle..."
+	@find $(BUILD_DIR) -name "*.app" -exec cp cortexd {}/Contents/MacOS/ \; 2>/dev/null || true
+	@echo "Desktop application built successfully"
+
+# Development mode with hot reload
+dev: check-deps
+	@echo "Starting development mode..."
+	@export PATH=$$PATH:$(shell go env GOPATH)/bin && wails dev
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	@rm -rf $(BUILD_DIR)
+	@rm -rf $(DESKTOP_FRONTEND_DIR)
+	@rm -rf $(FRONTEND_DIR)/dist
+	@echo "Build artifacts cleaned"
+
+# Generate Wails bindings
+generate-bindings:
+	@echo "Generating Wails bindings..."
+	@export PATH=$$PATH:$(shell go env GOPATH)/bin && wails generate module
+	@echo "Bindings generated successfully"
+
+# Package for distribution
+package: build-desktop
+	@echo "Packaging application for distribution..."
+	@# macOS
+	@if [ -f "$(BUILD_DIR)/$(BINARY_NAME).app" ]; then \
+		echo "Creating macOS DMG..."; \
+		hdiutil create -volname "Cortex Desktop" -srcfolder "$(BUILD_DIR)/$(BINARY_NAME).app" -ov -format UDZO "$(BUILD_DIR)/cortex-desktop-$(VERSION)-darwin.dmg"; \
+	fi
+	@# Windows - assumes NSIS is available
+	@if [ -f "$(BUILD_DIR)/$(BINARY_NAME).exe" ]; then \
+		echo "Windows installer will be created by Wails during build"; \
+	fi
+	@# Linux - create tar.gz
+	@if [ -f "$(BUILD_DIR)/$(BINARY_NAME)" ]; then \
+		echo "Creating Linux tar.gz..."; \
+		cd $(BUILD_DIR) && tar -czf cortex-desktop-$(VERSION)-linux-amd64.tar.gz $(BINARY_NAME); \
+	fi
+	@echo "Packaging complete"
+
+# Run the built desktop application
+run: build-dev
+	@echo "Running desktop application..."
+	@if [ -d "$(BUILD_DIR)/$(BINARY_NAME).app" ]; then \
+		open "$(BUILD_DIR)/$(BINARY_NAME).app"; \
+	elif [ -f "$(BUILD_DIR)/$(BINARY_NAME).exe" ]; then \
+		"$(BUILD_DIR)/$(BINARY_NAME).exe"; \
+	elif [ -f "$(BUILD_DIR)/$(BINARY_NAME)" ]; then \
+		"$(BUILD_DIR)/$(BINARY_NAME)"; \
+	else \
+		echo "No executable found in $(BUILD_DIR)/"; \
+		exit 1; \
+	fi
+
+# Run tests
+test:
+	@echo "Running tests..."
+	@go test -v ./...
+	@cd $(FRONTEND_DIR) && npm test
+	@echo "Tests completed"
+
+# Lint code
+lint:
+	@echo "Running linters..."
+	@go vet ./...
+	@gofmt -l .
+	@cd $(FRONTEND_DIR) && npm run lint
+	@echo "Linting completed"
+
+# Show version information
+version:
+	@echo "Version: $(VERSION)"
+	@echo "Commit: $(COMMIT)"
+	@echo "Build Time: $(BUILD_TIME)"
+
+# Show help
+help:
+	@echo "Cortex Desktop Build System"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  all              - Build desktop application (default)"
+	@echo "  install-deps     - Install all dependencies"
+	@echo "  check-deps       - Check if dependencies are installed"
+	@echo "  build-web        - Build web frontend only"
+	@echo "  copy-web         - Copy web build to desktop frontend"
+	@echo "  build-desktop    - Build desktop application for all platforms"
+	@echo "  build-dev        - Build desktop application for current platform"
+	@echo "  dev              - Start development mode with hot reload"
+	@echo "  clean            - Clean build artifacts"
+	@echo "  generate-bindings- Generate Wails bindings"
+	@echo "  package          - Package application for distribution"
+	@echo "  run              - Build and run desktop application"
+	@echo "  test             - Run tests"
+	@echo "  lint             - Run linters"
+	@echo "  version          - Show version information"
+	@echo "  help             - Show this help message"

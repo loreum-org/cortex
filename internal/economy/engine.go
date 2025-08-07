@@ -589,7 +589,7 @@ func (e *EconomicEngine) CreateNodeAccount(peerID string) (*NodeAccount, error) 
 	}
 
 	account := &Account{
-		ID:        peerID, // Use peer ID as the primary identifier
+		ID:        peerID,  // Use peer ID as the primary identifier
 		Address:   address, // Derived from peer ID
 		Balance:   big.NewInt(0),
 		Stake:     big.NewInt(0),
@@ -1321,6 +1321,39 @@ func (e *EconomicEngine) GetTransactions(accountID string, limit, offset int) ([
 	}
 
 	return accountTxs[offset:end], nil
+}
+
+// GetRecentTransactions returns the most recent transactions across the network
+func (e *EconomicEngine) GetRecentTransactions(limit int) []*Transaction {
+	e.mutex.RLock()
+	defer e.mutex.RUnlock()
+
+	// Return the most recent transactions (assuming they're added chronologically)
+	totalTxs := len(e.transactions)
+	if totalTxs == 0 {
+		return []*Transaction{}
+	}
+
+	start := 0
+	if totalTxs > limit {
+		start = totalTxs - limit
+	}
+
+	// Return a copy to avoid race conditions
+	result := make([]*Transaction, totalTxs-start)
+	copy(result, e.transactions[start:])
+
+	// Reverse to get newest first
+	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
+		result[i], result[j] = result[j], result[i]
+	}
+
+	return result
+}
+
+// GetAccountTransactions is an alias for GetTransactions for API compatibility
+func (e *EconomicEngine) GetAccountTransactions(accountID string, limit, offset int) ([]*Transaction, error) {
+	return e.GetTransactions(accountID, limit, offset)
 }
 
 // GetTransaction returns a transaction by ID

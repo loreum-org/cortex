@@ -17,7 +17,7 @@ type ConsensusService struct {
 	ReputationManager     *ReputationManager
 	ConflictResolver      *ConflictResolver
 	CausalOrderingManager *CausalOrderingManager
-	AGIRecorder          *AGIRecorder // AGI blockchain recorder
+	AGIRecorder           *AGIRecorder // AGI blockchain recorder
 	ValidationRules       []ValidationRule
 	FinalizationThreshold float64
 	lock                  sync.RWMutex
@@ -265,6 +265,7 @@ func (rm *ReputationManager) Lock() {
 func (rm *ReputationManager) Unlock() {
 	rm.lock.Unlock()
 }
+
 // SubmitTransaction submits a transaction to the consensus service
 func (cs *ConsensusService) SubmitTransaction(ctx context.Context, tx interface{}) error {
 	// Convert tx to the expected type
@@ -280,7 +281,7 @@ func (cs *ConsensusService) SubmitTransaction(ctx context.Context, tx interface{
 func (cs *ConsensusService) IsTransactionFinalized(txID string) bool {
 	cs.lock.RLock()
 	defer cs.lock.RUnlock()
-	
+
 	node, exists := cs.DAG.GetNode(txID)
 	if !exists {
 		return false

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "loreum-desktop",
+  "outputfilename": "loreum-desktop",
+  "frontend": {
+    "dir": "./frontend",
+    "install": "npm install",
+    "build": "npm run build",
+    "dev": "npm run dev"
+  },
+  "backend": {
+    "dir": "."
+  },
+  "author": {
+    "name": "Loreum Labs, Ltd.",
+    "email": "chad@loreum.org"
+
+  },
+  "info": {
+    "productName": "Loreum",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright © 2024 Loreum Labs, Ltd.",
+    "comments": "Decentralized AI inference network desktop application"
+  },
+  "nsisType": "multiple",
+  "obfuscated": false,
+  "garbleargs": "-literals -tiny -seed=random",
+  "buildType": "production",
+  "devServer": "localhost:5173",
+  "frontendDevServerUrl": "http://localhost:5173",
+  "appargs": "",
+  "runNonNativeBuildHooks": true,
+  "debounceMS": 100,
+  "devBrowser": "",
+  "assetdir": "./frontend/dist",
+  "reloaddirs": "",
+  "build": {
+    "appargs": "",
+    "compiler": "go",
+    "wailsjsdir": "",
+    "frontenddir": "./frontend",
+    "frontend:dev:watcher": {
+      "ignoreFiles": ".*\\.tmp",
+      "includeDirs": "",
+      "ignoreDirectories": ""
+    },
+    "mode": "production"
+  },
+  "outputDir": "./build/bin",
+  "wailsJSDir": "./frontend/src",
+  "bindings": {
+    "outputDir": "./frontend/src",
+    "generateTypes": true
+  },
+  "mac": {
+    "icon": "",
+    "bundle": "org.loreum.loreum-desktop",
+    "minimumSystemVersion": "10.13.0",
+    "webviewIsTransparent": false,
+    "windowIsTranslucent": false,
+    "aboutInfo": {
+      "title": "Loreum",
+      "message": "A decentralized AI inference network",
+      "icon": ""
+    }
+  },
+  "windows": {
+    "icon": "",
+    "webviewIsTransparent": false,
+    "windowIsTranslucent": false,
+    "theme": "dark",
+    "customTheme": {
+      "dark": {
+        "titleBarTextColour": 16777215,
+        "titleBarBgColour": 1644825,
+        "borderColour": 3355443,
+        "separatorColour": 3355443,
+        "windowColour": 1644825
+      },
+      "light": {
+        "titleBarTextColour": 0,
+        "titleBarBgColour": 16777215,
+        "borderColour": 13421772,
+        "separatorColour": 13421772,
+        "windowColour": 16777215
+      }
+    }
+  },
+  "linux": {
+    "icon": "",
+    "webviewGpuPolicy": "always",
+    "windowIsTranslucent": false
+  }
+}

@@ -12,10 +12,10 @@ import (
 
 // ServiceRouter handles intelligent routing of queries to appropriate nodes
 type ServiceRouter struct {
-	registry       *types.ServiceRegistry
-	routingPolicy  *types.RoutingPolicy
-	nodeMetrics    map[string]*NodeMetrics
-	loadBalancer   *LoadBalancer
+	registry      *types.ServiceRegistry
+	routingPolicy *types.RoutingPolicy
+	nodeMetrics   map[string]*NodeMetrics
+	loadBalancer  *LoadBalancer
 }
 
 // NodeMetrics tracks performance metrics for each node
@@ -38,13 +38,13 @@ type LoadBalancer struct {
 
 // RouteResult contains the result of query routing
 type RouteResult struct {
-	SelectedNodeID string                     `json:"selected_node_id"`
-	ServiceID      string                     `json:"service_id"`
-	EstimatedCost  string                     `json:"estimated_cost"`
-	EstimatedTime  time.Duration              `json:"estimated_time"`
-	Confidence     float64                    `json:"confidence"`
-	Alternatives   []string                   `json:"alternatives"`
-	Reasoning      string                     `json:"reasoning"`
+	SelectedNodeID string        `json:"selected_node_id"`
+	ServiceID      string        `json:"service_id"`
+	EstimatedCost  string        `json:"estimated_cost"`
+	EstimatedTime  time.Duration `json:"estimated_time"`
+	Confidence     float64       `json:"confidence"`
+	Alternatives   []string      `json:"alternatives"`
+	Reasoning      string        `json:"reasoning"`
 }
 
 // NewServiceRouter creates a new service router
@@ -95,7 +95,7 @@ func (sr *ServiceRouter) RouteQueryWithDetails(query *types.ServiceQuery) (*Rout
 
 	// Score all candidates
 	scoredNodes := sr.scoreNodes(candidateNodes, query)
-	
+
 	// Sort by score (highest first)
 	sort.Slice(scoredNodes, func(i, j int) bool {
 		return scoredNodes[i].Score > scoredNodes[j].Score
@@ -106,7 +106,7 @@ func (sr *ServiceRouter) RouteQueryWithDetails(query *types.ServiceQuery) (*Rout
 	}
 
 	best := scoredNodes[0]
-	
+
 	// Create alternatives list
 	alternatives := make([]string, 0, min(3, len(scoredNodes)-1))
 	for i := 1; i < len(scoredNodes) && i <= 3; i++ {
@@ -136,7 +136,7 @@ func (sr *ServiceRouter) findCandidateNodes(query *types.ServiceQuery) []Candida
 	for _, requirement := range query.RequiredServices {
 		// Find services of the required type
 		serviceIDs := sr.registry.TypeIndex[requirement.Type]
-		
+
 		for _, serviceID := range serviceIDs {
 			service := sr.registry.Services[serviceID]
 			if service == nil || service.Status != types.ServiceStatusActive {
@@ -162,10 +162,10 @@ func (sr *ServiceRouter) findCandidateNodes(query *types.ServiceQuery) []Candida
 
 // CandidateNode represents a node that can potentially handle a query
 type CandidateNode struct {
-	NodeID    string                    `json:"node_id"`
-	ServiceID string                    `json:"service_id"`
-	Service   *types.ServiceOffering    `json:"service"`
-	Score     float64                   `json:"score"`
+	NodeID    string                 `json:"node_id"`
+	ServiceID string                 `json:"service_id"`
+	Service   *types.ServiceOffering `json:"service"`
+	Score     float64                `json:"score"`
 }
 
 // selectBestNode selects the best node based on the routing policy
@@ -197,25 +197,25 @@ func (sr *ServiceRouter) scoreNodes(candidates []CandidateNode, query *types.Ser
 // calculateNodeScore calculates a comprehensive score for a node
 func (sr *ServiceRouter) calculateNodeScore(candidate CandidateNode, query *types.ServiceQuery) float64 {
 	metrics := sr.getNodeMetrics(candidate.NodeID)
-	
+
 	// Reputation score (0-1)
 	reputationScore := metrics.ReputationScore / 10.0 // Assuming reputation is 0-10
-	
+
 	// Price score (inverse, lower price = higher score)
 	priceScore := sr.calculatePriceScore(candidate.Service, query)
-	
+
 	// Response time score (inverse, faster = higher score)
 	responseScore := sr.calculateResponseTimeScore(metrics)
-	
+
 	// Load score (inverse, lower load = higher score)
 	loadScore := sr.calculateLoadScore(metrics)
-	
+
 	// Weighted combination
-	totalScore := 
-		reputationScore * sr.routingPolicy.ReputationWeight +
-		priceScore * sr.routingPolicy.PriceWeight +
-		responseScore * sr.routingPolicy.ResponseTimeWeight +
-		loadScore * sr.routingPolicy.LoadWeight
+	totalScore :=
+		reputationScore*sr.routingPolicy.ReputationWeight +
+			priceScore*sr.routingPolicy.PriceWeight +
+			responseScore*sr.routingPolicy.ResponseTimeWeight +
+			loadScore*sr.routingPolicy.LoadWeight
 
 	return totalScore
 }
@@ -235,10 +235,10 @@ func (sr *ServiceRouter) lowestPriceSelection(candidates []CandidateNode) string
 	if len(candidates) == 0 {
 		return ""
 	}
-	
+
 	bestNode := candidates[0]
 	bestPrice := sr.parsePrice(bestNode.Service.Pricing.BasePrice)
-	
+
 	for _, candidate := range candidates[1:] {
 		price := sr.parsePrice(candidate.Service.Pricing.BasePrice)
 		if price < bestPrice {
@@ -246,7 +246,7 @@ func (sr *ServiceRouter) lowestPriceSelection(candidates []CandidateNode) string
 			bestNode = candidate
 		}
 	}
-	
+
 	return bestNode.NodeID
 }
 
@@ -254,10 +254,10 @@ func (sr *ServiceRouter) highestReputationSelection(candidates []CandidateNode) 
 	if len(candidates) == 0 {
 		return ""
 	}
-	
+
 	bestNode := candidates[0]
 	bestReputation := sr.getNodeMetrics(bestNode.NodeID).ReputationScore
-	
+
 	for _, candidate := range candidates[1:] {
 		reputation := sr.getNodeMetrics(candidate.NodeID).ReputationScore
 		if reputation > bestReputation {
@@ -265,7 +265,7 @@ func (sr *ServiceRouter) highestReputationSelection(candidates []CandidateNode) 
 			bestNode = candidate
 		}
 	}
-	
+
 	return bestNode.NodeID
 }
 
@@ -273,10 +273,10 @@ func (sr *ServiceRouter) fastestResponseSelection(candidates []CandidateNode) st
 	if len(candidates) == 0 {
 		return ""
 	}
-	
+
 	bestNode := candidates[0]
 	bestResponse := sr.getNodeMetrics(bestNode.NodeID).AverageResponse
-	
+
 	for _, candidate := range candidates[1:] {
 		response := sr.getNodeMetrics(candidate.NodeID).AverageResponse
 		if response < bestResponse {
@@ -284,22 +284,22 @@ func (sr *ServiceRouter) fastestResponseSelection(candidates []CandidateNode) st
 			bestNode = candidate
 		}
 	}
-	
+
 	return bestNode.NodeID
 }
 
 func (sr *ServiceRouter) weightedSelection(candidates []CandidateNode, query *types.ServiceQuery) (string, error) {
 	scoredNodes := sr.scoreNodes(candidates, query)
-	
+
 	if len(scoredNodes) == 0 {
 		return "", fmt.Errorf("no nodes available after scoring")
 	}
-	
+
 	// Sort by score and return the best
 	sort.Slice(scoredNodes, func(i, j int) bool {
 		return scoredNodes[i].Score > scoredNodes[j].Score
 	})
-	
+
 	return scoredNodes[0].NodeID, nil
 }
 
@@ -339,14 +339,14 @@ func (sr *ServiceRouter) serviceMatchesRequirement(service *types.ServiceOfferin
 func (sr *ServiceRouter) deduplicateByNode(candidates []CandidateNode) []CandidateNode {
 	seen := make(map[string]bool)
 	var result []CandidateNode
-	
+
 	for _, candidate := range candidates {
 		if !seen[candidate.NodeID] {
 			seen[candidate.NodeID] = true
 			result = append(result, candidate)
 		}
 	}
-	
+
 	return result
 }
 
@@ -354,7 +354,7 @@ func (sr *ServiceRouter) getNodeMetrics(nodeID string) *NodeMetrics {
 	if metrics, exists := sr.nodeMetrics[nodeID]; exists {
 		return metrics
 	}
-	
+
 	// Return default metrics if not found
 	return &NodeMetrics{
 		NodeID:          nodeID,
@@ -371,19 +371,19 @@ func (sr *ServiceRouter) calculatePriceScore(service *types.ServiceOffering, que
 	if service.Pricing == nil {
 		return 0.5 // Default neutral score
 	}
-	
+
 	basePrice := sr.parsePrice(service.Pricing.BasePrice)
 	if basePrice == 0 {
 		return 1.0 // Free service gets highest price score
 	}
-	
+
 	// Normalize price score (this is simplified)
 	// In reality, you'd want to compare against market rates
 	maxPrice := sr.parsePrice(query.MaxPrice)
 	if maxPrice > 0 && basePrice <= maxPrice {
 		return 1.0 - (basePrice / maxPrice)
 	}
-	
+
 	return 0.5 // Default if no max price specified
 }
 
@@ -396,7 +396,7 @@ func (sr *ServiceRouter) calculateResponseTimeScore(metrics *NodeMetrics) float6
 	} else if responseMs <= 1000 {
 		return 1.0 - (responseMs-100)/900*0.5
 	} else {
-		return math.Max(0.1, 0.5 - (responseMs-1000)/10000*0.4)
+		return math.Max(0.1, 0.5-(responseMs-1000)/10000*0.4)
 	}
 }
 
@@ -404,9 +404,9 @@ func (sr *ServiceRouter) calculateLoadScore(metrics *NodeMetrics) float64 {
 	if metrics.MaxLoad == 0 {
 		return 1.0
 	}
-	
+
 	loadRatio := float64(metrics.CurrentLoad) / float64(metrics.MaxLoad)
-	return math.Max(0.1, 1.0 - loadRatio)
+	return math.Max(0.1, 1.0-loadRatio)
 }
 
 func (sr *ServiceRouter) parsePrice(priceStr string) float64 {
@@ -430,7 +430,7 @@ func (sr *ServiceRouter) estimateResponseTime(nodeID string) time.Duration {
 
 func (sr *ServiceRouter) generateReasoning(selected CandidateNode, query *types.ServiceQuery) string {
 	return fmt.Sprintf("Selected node %s based on weighted scoring: reputation %.2f, load %d/%d, estimated response time %v",
-		selected.NodeID, 
+		selected.NodeID,
 		sr.getNodeMetrics(selected.NodeID).ReputationScore,
 		sr.getNodeMetrics(selected.NodeID).CurrentLoad,
 		sr.getNodeMetrics(selected.NodeID).MaxLoad,
