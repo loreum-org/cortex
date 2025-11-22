@@ -1,0 +1,607 @@
+// WebSocket service for real-time communication with Cortex API
+export interface WebSocketMessage {
+  type: string;
+  method?: string;
+  data?: any;
+  id?: string;
+  timestamp?: string;
+  error?: string;
+}
+
+export interface WebSocketSubscription {
+  type: string;
+  callback: (data: any) => void;
+}
+
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+
+export class CortexWebSocketService {
+  private ws: WebSocket | null = null;
+  private subscriptions: Map<string, WebSocketSubscription[]> = new Map();
+  private messageQueue: WebSocketMessage[] = [];
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectInterval = 5000;
+  private reconnectTimer: number | null = null;
+  private connectionStatus: ConnectionStatus = 'disconnected';
+  private statusCallbacks: ((status: ConnectionStatus) => void)[] = [];
+  private baseURL: string;
+  
+  constructor(baseURL = 'ws://localhost:4891') {
+    this.baseURL = baseURL;
+  }
+
+  // Connection management
+  connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        resolve();
+        return;
+      }
+
+      this.setConnectionStatus('connecting');
+      
+      const wsUrl = `${this.baseURL}/ws`;
+      console.log('🔌 Attempting to connect to:', wsUrl);
+      this.ws = new WebSocket(wsUrl);
+
+      this.ws.onopen = () => {
+        console.log('🚀 Connected to Cortex WebSocket');
+        this.setConnectionStatus('connected');
+        this.reconnectAttempts = 0;
+        
+        // Send queued messages
+        this.flushMessageQueue();
+        
+        // Auto-subscribe to common real-time updates
+        this.subscribeToRealTimeUpdates();
+        
+        resolve();
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const message: WebSocketMessage = JSON.parse(event.data);
+          console.log('📨 Received WebSocket message:', message.type, message.id ? `(${message.id})` : '');
+          if (message.type === 'agents_data') {
+            console.log('🔍 AGENTS_DATA message details:', {
+              id: message.id,
+              type: message.type,
+              timestamp: message.timestamp,
+              dataKeys: message.data ? Object.keys(message.data) : 'no data'
+            });
+          }
+          this.handleMessage(message);
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error);
+        }
+      };
+
+      this.ws.onclose = () => {
+        console.log('🔌 WebSocket connection closed');
+        this.setConnectionStatus('disconnected');
+        this.attemptReconnect();
+      };
+
+      this.ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        this.setConnectionStatus('error');
+        reject(error);
+      };
+    });
+  }
+
+  disconnect(): void {
+    if (this.reconnectTimer) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    
+    this.setConnectionStatus('disconnected');
+  }
+
+  private setConnectionStatus(status: ConnectionStatus): void {
+    if (this.connectionStatus !== status) {
+      this.connectionStatus = status;
+      this.statusCallbacks.forEach(callback => callback(status));
+    }
+  }
+
+  getConnectionStatus(): ConnectionStatus {
+    return this.connectionStatus;
+  }
+
+  onConnectionStatusChange(callback: (status: ConnectionStatus) => void): () => void {
+    this.statusCallbacks.push(callback);
+    return () => {
+      const index = this.statusCallbacks.indexOf(callback);
+      if (index > -1) {
+        this.statusCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('❌ Max reconnection attempts reached');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+    
+    this.reconnectTimer = window.setTimeout(() => {
+      this.connect().catch(error => {
+        console.error('❌ Reconnection failed:', error);
+      });
+    }, this.reconnectInterval);
+  }
+
+  private flushMessageQueue(): void {
+    while (this.messageQueue.length > 0) {
+      const message = this.messageQueue.shift();
+      if (message) {
+        this.sendMessage(message);
+      }
+    }
+  }
+
+  private subscribeToRealTimeUpdates(): void {
+    // Subscribe to common real-time updates
+    const subscriptions = [
+      'metrics',
+      'consciousness', 
+      'ollama_status',
+      'system_events',
+      'query_results'
+    ];
+
+    subscriptions.forEach(type => {
+      this.sendMessage({
+        type: 'subscribe',
+        data: type  // Send the subscription type as a string, not an object
+      });
+    });
+  }
+
+  // Message handling
+  private handleMessage(message: WebSocketMessage): void {
+    const { type, data } = message;
+    
+    // Handle different message types
+    switch (type) {
+      case 'status':
+        console.log('📊 Connection status:', data);
+        break;
+      case 'response':
+      case 'query_complete':
+        this.notifySubscribers('query_response', message);
+        break;
+      case 'query_start':
+        this.notifySubscribers('query_start', message);
+        break;
+      case 'query_chunk':
+        this.notifySubscribers('query_chunk', message);
+        break;
+      case 'query_progress':
+        this.notifySubscribers('query_progress', message);
+        break;
+      case 'metrics':
+        this.notifySubscribers('metrics', data);
+        break;
+      case 'consciousness':
+        this.notifySubscribers('consciousness', data);
+        break;
+      case 'ollama_status':
+        this.notifySubscribers('ollama_status', data);
+        break;
+      case 'notification':
+        this.notifySubscribers('system_events', data);
+        break;
+      case 'error':
+        console.error('❌ WebSocket error:', message.error);
+        this.notifySubscribers('error', message);
+        break;
+      default:
+        console.log(`📨 Received ${type}:`, data);
+        this.notifySubscribers(type, message);
+    }
+  }
+
+  private notifySubscribers(type: string, data: any): void {
+    const subscriptions = this.subscriptions.get(type) || [];
+    subscriptions.forEach(subscription => {
+      try {
+        subscription.callback(data);
+      } catch (error) {
+        console.error(`❌ Error in subscription callback for ${type}:`, error);
+      }
+    });
+  }
+
+  // Public API methods
+  sendMessage(message: WebSocketMessage): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      const messageWithTimestamp = {
+        ...message,
+        timestamp: new Date().toISOString()
+      };
+      console.log('📤 Sending WebSocket message:', message.type, message.id ? `(${message.id})` : '');
+      this.ws.send(JSON.stringify(messageWithTimestamp));
+    } else {
+      console.log('⏰ Queueing message (connection not ready):', message.type);
+      // Queue message for when connection is restored
+      this.messageQueue.push(message);
+    }
+  }
+
+  subscribe(type: string, callback: (data: any) => void): () => void {
+    if (!this.subscriptions.has(type)) {
+      this.subscriptions.set(type, []);
+    }
+    
+    const subscription: WebSocketSubscription = { type, callback };
+    this.subscriptions.get(type)!.push(subscription);
+    
+    // Return unsubscribe function
+    return () => {
+      const subscriptions = this.subscriptions.get(type) || [];
+      const index = subscriptions.indexOf(subscription);
+      if (index > -1) {
+        subscriptions.splice(index, 1);
+      }
+    };
+  }
+
+  // Query methods with streaming support
+  async submitQuery(
+    query: string, 
+    useRAG = true, 
+    onChunk?: (chunk: string, metadata?: any) => void
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const queryId = `query_${Date.now()}`;
+      let fullResponse = '';
+      let responseReceived = false;
+      
+      // Subscribe to streaming chunks (these come with correlation IDs)
+      const unsubscribeChunk = this.subscribe('query_chunk', (message: WebSocketMessage) => {
+        // For query_chunk messages, we need to check if they're related to our query
+        // by checking the metadata for the query_id
+        const metadata = message.data?.metadata;
+        const queryTimestamp = queryId.replace('query_', '');
+        
+        // Check if this chunk is related to our query by comparing timestamps
+        if (metadata && metadata.query_id && metadata.query_id.includes(queryTimestamp)) {
+          const chunk = message.data?.chunk || '';
+          fullResponse += chunk;
+          if (onChunk) {
+            onChunk(chunk, metadata);
+          }
+        }
+      });
+
+      // Subscribe to event messages (these come with the original query ID)
+      const unsubscribeEvent = this.subscribe('event', (message: WebSocketMessage) => {
+        if (message.id === queryId) {
+          responseReceived = true;
+          unsubscribeChunk();
+          unsubscribeEvent();
+          unsubscribeComplete();
+          unsubscribeError();
+          
+          // Extract the response from the event data
+          const result = message.data?.result || message.data?.text || message.data?.response || 'No response';
+          const metadata = message.data?.metadata || null;
+          
+          // If we have streaming chunks, use those; otherwise use the event result
+          const finalResponse = fullResponse || result;
+          
+          // Call onChunk one final time with the complete response if we haven't been streaming
+          if (!fullResponse && onChunk) {
+            onChunk(result, metadata);
+          }
+          
+          resolve(finalResponse);
+        }
+      });
+
+      // Subscribe to query completion (fallback)
+      const unsubscribeComplete = this.subscribe('query_response', (message: WebSocketMessage) => {
+        if (message.id === queryId && !responseReceived) {
+          responseReceived = true;
+          unsubscribeChunk();
+          unsubscribeEvent();
+          unsubscribeComplete();
+          unsubscribeError();
+          
+          if (message.type === 'error') {
+            reject(new Error(message.error || 'Query failed'));
+          } else {
+            // Return the accumulated response or single response
+            resolve(fullResponse || message.data?.text || message.data?.response || 'No response');
+          }
+        }
+      });
+
+      // Subscribe to errors
+      const unsubscribeError = this.subscribe('error', (message: WebSocketMessage) => {
+        if (message.id === queryId && !responseReceived) {
+          responseReceived = true;
+          unsubscribeChunk();
+          unsubscribeEvent();
+          unsubscribeComplete();
+          unsubscribeError();
+          reject(new Error(message.error || 'Query failed'));
+        }
+      });
+
+      // Send the query
+      this.sendMessage({
+        type: 'query',
+        id: queryId,
+        data: {
+          query,
+          use_rag: useRAG
+        }
+      });
+
+      // Set timeout for query
+      setTimeout(() => {
+        if (!responseReceived) {
+          unsubscribeChunk();
+          unsubscribeEvent();
+          unsubscribeComplete();
+          unsubscribeError();
+          reject(new Error('Query timeout'));
+        }
+      }, 60000); // 60 second timeout for streaming
+    });
+  }
+
+  requestStatus(): void {
+    this.sendMessage({
+      type: 'get_status',
+      data: {}
+    });
+  }
+
+  restartOllama(): void {
+    this.sendMessage({
+      type: 'restart_ollama',
+      data: {}
+    });
+  }
+
+  // Real-time data subscriptions
+  subscribeToMetrics(callback: (metrics: any) => void): () => void {
+    return this.subscribe('metrics', callback);
+  }
+
+  subscribeToConsciousness(callback: (state: any) => void): () => void {
+    return this.subscribe('consciousness', callback);
+  }
+
+  subscribeToOllamaStatus(callback: (status: any) => void): () => void {
+    return this.subscribe('ollama_status', callback);
+  }
+
+  subscribeToSystemEvents(callback: (event: any) => void): () => void {
+    return this.subscribe('system_events', callback);
+  }
+
+  subscribeToQueryResults(callback: (result: any) => void): () => void {
+    return this.subscribe('query_response', callback);
+  }
+
+  // Model management via WebSocket
+  async getModels(): Promise<{ installed: any[], available: any[] }> {
+    // Ensure connection is established
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      await this.connect();
+    }
+    
+    return new Promise((resolve, reject) => {
+      const requestId = `models_${Date.now()}`;
+      
+      // Subscribe to response - backend returns 'response' type for API responses
+      const unsubscribe = this.subscribe('response', (message: WebSocketMessage) => {
+        if (message.id === requestId) {
+          unsubscribe();
+          if (message.error) {
+            reject(new Error(message.error));
+          } else {
+            resolve(message.data);
+          }
+        }
+      });
+
+      // Send request
+      this.sendMessage({
+        type: 'request',
+        method: 'getModels',
+        id: requestId,
+        data: {}
+      });
+
+      // Set timeout
+      setTimeout(() => {
+        unsubscribe();
+        reject(new Error('Request timeout'));
+      }, 15000); // Increased timeout
+    });
+  }
+
+  async getAgents(): Promise<{ agents: any[] }> {
+    console.log('🔄 getAgents called - checking connection...');
+    
+    // Ensure connection is established
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      console.log('🔌 WebSocket not open, attempting to connect...');
+      await this.connect();
+      console.log('✅ Connection established');
+    }
+    
+    return new Promise((resolve, reject) => {
+      const requestId = `agents_${Date.now()}`;
+      console.log('📨 Creating agents request with ID:', requestId);
+      
+      let responseReceived = false;
+      
+      // Subscribe to response - backend returns 'response' type for API responses
+      const unsubscribe = this.subscribe('response', (message: WebSocketMessage) => {
+        console.log('📨 Received response message with ID:', message.id);
+        if (message.id === requestId) {
+          responseReceived = true;
+          unsubscribe();
+          if (message.error) {
+            console.error('❌ Agents request error:', message.error);
+            reject(new Error(message.error));
+          } else {
+            console.log('✅ Agents request successful:', message.data);
+            resolve(message.data);
+          }
+        } else {
+          console.log('📨 Message ID mismatch - expected:', requestId, 'got:', message.id);
+        }
+      });
+
+      // Send request
+      console.log('📤 Sending agents request...');
+      this.sendMessage({
+        type: 'request',
+        method: 'getAgents',
+        id: requestId,
+        data: {}
+      });
+
+      // Set timeout
+      setTimeout(() => {
+        if (!responseReceived) {
+          console.error('⏰ Agents request timed out after 15 seconds');
+          unsubscribe();
+          reject(new Error('Request timeout'));
+        }
+      }, 15000); // Increased timeout
+    });
+  }
+
+  async downloadModel(modelName: string, onProgress?: (progress: number, message: string) => void): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const requestId = `download_${Date.now()}`;
+      
+      // Subscribe to download progress
+      const unsubscribe = this.subscribe('model_download', (message: WebSocketMessage) => {
+        if (message.id === requestId) {
+          const { status, progress, message: msg } = message.data;
+          
+          if (status === 'completed') {
+            unsubscribe();
+            resolve();
+          } else if (status === 'failed') {
+            unsubscribe();
+            reject(new Error(msg || 'Download failed'));
+          } else if (status === 'downloading' && onProgress) {
+            onProgress(progress || 0, msg || '');
+          }
+        }
+      });
+
+      // Send download request
+      this.sendMessage({
+        type: 'request',
+        method: 'downloadModel',
+        id: requestId,
+        data: { model_name: modelName }
+      });
+
+      // Set timeout (30 minutes for downloads)
+      setTimeout(() => {
+        unsubscribe();
+        reject(new Error('Download timeout'));
+      }, 30 * 60 * 1000);
+    });
+  }
+
+  async deleteModel(modelName: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const requestId = `delete_${Date.now()}`;
+      
+      // Subscribe to response - backend returns 'response' type for API responses
+      const unsubscribe = this.subscribe('response', (message: WebSocketMessage) => {
+        if (message.id === requestId) {
+          unsubscribe();
+          if (message.error) {
+            reject(new Error(message.error));
+          } else {
+            resolve();
+          }
+        }
+      });
+
+      // Send delete request
+      this.sendMessage({
+        type: 'request',
+        method: 'deleteModel',
+        id: requestId,
+        data: { model_name: modelName }
+      });
+
+      // Set timeout
+      setTimeout(() => {
+        unsubscribe();
+        reject(new Error('Request timeout'));
+      }, 10000);
+    });
+  }
+
+  // Get conversation history
+  async getConversationHistory(limit: number = 10): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const requestId = `history_${Date.now()}`;
+      
+      // Subscribe to response
+      const unsubscribe = this.subscribe('response', (message: WebSocketMessage) => {
+        if (message.id === requestId) {
+          unsubscribe();
+          if (message.error || (message.data && message.data.error)) {
+            reject(new Error(message.error || message.data.error));
+          } else {
+            resolve(message.data?.messages || []);
+          }
+        }
+      });
+
+      // Send history request
+      this.sendMessage({
+        type: 'request',
+        method: 'getConversationHistory',
+        id: requestId,
+        data: { limit }
+      });
+
+      // Set timeout
+      setTimeout(() => {
+        unsubscribe();
+        reject(new Error('History request timeout'));
+      }, 10000);
+    });
+  }
+}
+
+// Create singleton instance
+export const cortexWebSocket = new CortexWebSocketService();
+
+// Auto-connect when module loads
+if (typeof window !== 'undefined') {
+  cortexWebSocket.connect().catch(error => {
+    console.error('❌ Failed to auto-connect WebSocket:', error);
+  });
+}
+
+export default cortexWebSocket;

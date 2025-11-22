@@ -15,6 +15,9 @@ type ConsensusService struct {
 	DAG                   *types.DAG
 	TransactionPool       *TransactionPool
 	ReputationManager     *ReputationManager
+	ConflictResolver      *ConflictResolver
+	CausalOrderingManager *CausalOrderingManager
+	AGIRecorder           *AGIRecorder // AGI blockchain recorder
 	ValidationRules       []ValidationRule
 	FinalizationThreshold float64
 	lock                  sync.RWMutex
@@ -37,8 +40,9 @@ type ReputationManager struct {
 
 // NewConsensusService creates a new consensus service
 func NewConsensusService() *ConsensusService {
-	return &ConsensusService{
-		DAG: types.NewDAG(),
+	dag := types.NewDAG()
+	cs := &ConsensusService{
+		DAG: dag,
 		TransactionPool: &TransactionPool{
 			Transactions: make(map[string]*types.Transaction),
 		},
@@ -48,6 +52,14 @@ func NewConsensusService() *ConsensusService {
 		ValidationRules:       make([]ValidationRule, 0),
 		FinalizationThreshold: 0.67, // 2/3 majority
 	}
+
+	// Initialize conflict resolver
+	cs.ConflictResolver = NewConflictResolver(dag)
+
+	// Initialize causal ordering manager
+	cs.CausalOrderingManager = NewCausalOrderingManager(dag)
+
+	return cs
 }
 
 // AddTransaction adds a transaction to the pool
@@ -91,9 +103,31 @@ func (cs *ConsensusService) ProcessTransactions(ctx context.Context) {
 
 			// Process each transaction
 			for _, tx := range transactions {
+				// Check for conflicts before adding to DAG
+				conflicts := cs.ConflictResolver.DetectConflicts(tx)
+
+				if len(conflicts) > 0 {
+					// Attempt to resolve conflicts
+					if err := cs.ConflictResolver.ResolveConflicts(conflicts); err != nil {
+						log.Printf("Failed to resolve conflicts for transaction %s: %v", tx.ID, err)
+						continue // Skip this transaction
+					}
+
+					// Check if this transaction was removed during conflict resolution
+					if _, exists := cs.DAG.GetNode(tx.ID); !exists {
+						log.Printf("Transaction %s was removed during conflict resolution", tx.ID)
+						continue
+					}
+				}
+
 				cs.lock.Lock()
 				node := cs.DAG.AddNode(tx)
 				cs.lock.Unlock()
+
+				// Update causal ordering
+				if err := cs.CausalOrderingManager.UpdateCausalOrdering(tx); err != nil {
+					log.Printf("Failed to update causal ordering for transaction %s: %v", tx.ID, err)
+				}
 
 				// Calculate score for the node
 				cs.calculateNodeScore(node)
@@ -184,6 +218,16 @@ func (tp *TransactionPool) GetTransaction(id string) (*types.Transaction, bool) 
 	return tx, exists
 }
 
+// Lock locks the transaction pool for writing
+func (tp *TransactionPool) Lock() {
+	tp.lock.Lock()
+}
+
+// Unlock unlocks the transaction pool
+func (tp *TransactionPool) Unlock() {
+	tp.lock.Unlock()
+}
+
 // NewReputationManager creates a new reputation manager
 func NewReputationManager() *ReputationManager {
 	return &ReputationManager{
@@ -210,4 +254,37 @@ func (rm *ReputationManager) GetScore(nodeID string) float64 {
 	}
 
 	return score
+}
+
+// Lock locks the reputation manager for writing
+func (rm *ReputationManager) Lock() {
+	rm.lock.Lock()
+}
+
+// Unlock unlocks the reputation manager
+func (rm *ReputationManager) Unlock() {
+	rm.lock.Unlock()
+}
+
+// SubmitTransaction submits a transaction to the consensus service
+func (cs *ConsensusService) SubmitTransaction(ctx context.Context, tx interface{}) error {
+	// Convert tx to the expected type
+	switch t := tx.(type) {
+	case *types.Transaction:
+		return cs.AddTransaction(t)
+	default:
+		return fmt.Errorf("unsupported transaction type: %T", tx)
+	}
+}
+
+// IsTransactionFinalized checks if a transaction is finalized
+func (cs *ConsensusService) IsTransactionFinalized(txID string) bool {
+	cs.lock.RLock()
+	defer cs.lock.RUnlock()
+
+	node, exists := cs.DAG.GetNode(txID)
+	if !exists {
+		return false
+	}
+	return node.Transaction.Finalized
 }

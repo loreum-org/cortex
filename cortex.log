@@ -1,0 +1,213 @@
+2025/07/05 22:09:07 Starting Cortex node: cortex-node-1104997b
+2025/07/05 22:09:07 P2P port: 4001
+2025/07/05 22:09:07 API port: 4891
+2025/07/05 22:09:07 Host created. We are: 12D3KooWHrxcsCRsxdzhRLqnGReXfeCGDPTv8QL95358zjnn1phH
+2025/07/05 22:09:07 Listening on: [/ip4/127.0.0.1/tcp/4001 /ip4/127.0.0.1/udp/4001/quic-v1 /ip4/192.168.1.84/tcp/4001 /ip4/192.168.1.84/udp/4001/quic-v1 /ip6/::1/tcp/4001 /ip6/::1/udp/4001/quic-v1]
+2025/07/05 22:09:07 Starting embedded model manager...
+2025/07/05 22:09:07 Ollama server already running on 127.0.0.1:11434
+2025/07/05 22:09:07 Embedded Ollama started successfully
+2025/07/05 22:09:07 Embedded model manager started successfully
+2025/07/05 22:09:07 Found 6 available Ollama models: [llama2:latest llama3.2:3b nomic-embed-text:latest llama3.2-vision:latest llama3.2:1b cogito:latest]
+2025/07/05 22:09:07 Registered Ollama model: cogito
+2025/07/05 22:09:07 Registered Ollama model: llama3.2:3b
+2025/07/05 22:09:07 Registered Ollama model: llama3.2:1b
+2025/07/05 22:09:07 Registered Ollama model: nomic-embed-text:latest
+2025/07/05 22:09:07 Warning: Failed to register OpenAI models: OpenAI API key not set
+2025/07/05 22:09:07 Registered Ollama model: cogito:latest (URL: http://127.0.0.1:11434)
+2025/07/05 22:09:07 Registered Ollama model: llama3.2:3b (URL: http://127.0.0.1:11434)
+2025/07/05 22:09:07 Registered Ollama model: llama3.2:1b (URL: http://127.0.0.1:11434)
+2025/07/05 22:09:07 Registered Ollama model: nomic-embed-text:latest (URL: http://127.0.0.1:11434)
+2025/07/05 22:09:07 Auto-registration complete. Registered 4 models from 6 available
+2025/07/05 22:09:07 Auto-registration completed
+2025/07/05 22:09:07 Updated default model to: ollama-cogito:latest
+2025/07/05 22:09:07 Vector database loaded from data/conversations/vector_db.json: 4 documents, saved at 2025-07-05T21:59:38+08:00
+2025/07/05 22:09:07 Loaded vector database from data/conversations/vector_db.json with 4 documents
+2025/07/05 22:09:07 Loaded 70 user profiles from data/conversations/user_profile.json
+2025/07/05 22:09:07 No JSON state found in AGI document
+2025/07/05 22:09:07 Added document with ID: doc_AGI CORTEX
+2025/07/05 22:09:07 AGI state saved to vector DB for node 12D3KooWHrxcsCRsxdzhRLqnGReXfeCGDPTv8QL95358zjnn1phH (v1)
+2025/07/05 22:09:07 [ContextManager] Initialized with consciousness runtime for node 12D3KooWHrxcsCRsxdzhRLqnGReXfeCGDPTv8QL95358zjnn1phH
+2025/07/05 22:09:07 Economic Engine initialized.
+2025/07/05 22:09:07 Economic storage config prepared (SQL: localhost:3306, Redis: localhost:6379)
+2025/07/05 22:09:07 Economic consensus bridge created and connected.
+2025/07/05 22:09:07 Economic P2P broadcaster created and connected.
+2025/07/05 22:09:07 Economic consensus monitoring started.
+2025/07/05 22:09:07 [ContextManager] Starting new conversation session: conv_12D3KooWHrxcsCRsxdzhRLqnGReXfeCGDPTv8QL95358zjnn1phH_1751724547
+2025/07/05 22:09:07 [ContextManager] Warning: Failed to add conversation to user profile: user profile not found: node_user_12D3KooWHrxcsCRsxdzhRLqnGReXfeCGDPTv8QL95358zjnn1phH
+2025/07/05 22:09:07 Economic Engine maintenance tasks started.
+2025/07/05 22:09:07 Starting automatic reward distribution service (interval: 24h0m0s)
+2025/07/05 22:09:07 Automatic reward distributor started.
+2025/07/05 22:09:07 Default user account created: user-1 with address 0xUser1Address
+2025/07/05 22:09:07 Default node account created: 12D3KooWHrxcsCRsxdzhRLqnGReXfeCGDPTv8QL95358zjnn1phH with address 0x15f0adda9b0ac97062ed130055525a8e7d0ca32a
+2025/07/05 22:09:07 Transferred 1000000000000000000000 tokens to user account user-1 (Transaction ID: dec57580-38cc-4557-9ae5-ce3761e89dcf)
+2025/07/05 22:09:07 AGI blockchain recorder started for node 12D3KooWHrxcsCRsxdzhRLqnGReXfeCGDPTv8QL95358zjnn1phH
+2025/07/05 22:09:07 AGI blockchain recorder started.
+2025/07/05 22:09:07 Connected AGI system with blockchain recorder.
+2025/07/05 22:09:07 Service registry manager initialized for node 12D3KooWHrxc...
+2025/07/05 22:09:07 Economic transaction dec57580-38cc-4557-9ae5-ce3761e89dcf added to consensus as consensus_dec57580-38cc-4557-9ae5-ce3761e89dcf
+2025/07/05 22:09:07 Transfer transaction dec57580-38cc-4557-9ae5-ce3761e89dcf successfully added to consensus
+2025/07/05 22:09:07 EventBus: Event store enabled (max events: 10000)
+2025/07/05 22:09:07 EventBus started with 10 workers, queue size 1000
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_models (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_agents (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_status (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_metrics (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to query.submit (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to model.download (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to model.delete (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_transactions (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_accounts (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.wallet_balance (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.wallet_transfer (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_services (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.service_register (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.service_deregister (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_node_info (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler api_event_handler subscribed to api.get_peers (total handlers for this event: 1)
+2025/07/05 22:09:07 [EventDrivenServer] API handler registered for 16 event types
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to agent.start (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to agent.stop (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to agent.restart (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to agent.configure (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to agent.get_metrics (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to rag.add_document (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to rag.search (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to rag.get_context (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to rag.clear_memory (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to economy.create_account (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to economy.transfer (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to economy.stake (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to economy.unstake (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to economy.get_balance (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to economy.get_staking_info (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to service.register (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus worker 4 started
+2025/07/05 22:09:07 EventBus worker 5 started
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to service.deregister (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus worker 1 started
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to service.update (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus worker 7 started
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to service.discover (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to p2p.connect_peer (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to p2p.disconnect_peer (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus worker 9 started
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to p2p.broadcast (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to p2p.get_network_info (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to system.restart (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to system.shutdown (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to system.health_check (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler enhanced_service_handler subscribed to system.get_logs (total handlers for this event: 1)
+2025/07/05 22:09:07 [EventDrivenServer] Enhanced service handler registered for 27 event types
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to websocket.message (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to websocket.connected (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to websocket.disconnected (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to query.processed (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to query.failed (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to query.started (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to query.progress (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to query.response (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to agent.registered (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to agent.deregistered (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to model.downloaded (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to model.deleted (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to model.download (total handlers for this event: 2)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to metrics.updated (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus worker 3 started
+2025/07/05 22:09:07 EventBus worker 6 started
+2025/07/05 22:09:07 EventBus worker 8 started
+2025/07/05 22:09:07 EventBus worker 0 started
+2025/07/05 22:09:07 EventBus worker 2 started
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to consciousness.updated (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to system.error (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to system.health.status (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.models_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.agents_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.status_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.metrics_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.transactions_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.accounts_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.node_info_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.peers_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.wallet_data (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler websocket_handler subscribed to api.services_data (total handlers for this event: 1)
+2025/07/05 22:09:07 [EventDrivenServer] WebSocket handler registered for 27 event types
+2025/07/05 22:09:07 EventBus: Handler rag_handler subscribed to query.submit (total handlers for this event: 2)
+2025/07/05 22:09:07 EventBus: Handler rag_handler subscribed to system.component.started (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler rag_handler subscribed to system.health.check (total handlers for this event: 1)
+2025/07/05 22:09:07 [EventDrivenServer] RAG handler registered for 3 event types
+2025/07/05 22:09:07 EventBus: Handler agent_handler subscribed to query.submit (total handlers for this event: 3)
+2025/07/05 22:09:07 EventBus: Handler agent_handler subscribed to agent.create (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler agent_handler subscribed to agent.delete (total handlers for this event: 1)
+2025/07/05 22:09:07 EventBus: Handler agent_handler subscribed to system.component.started (total handlers for this event: 2)
+2025/07/05 22:09:07 EventBus: Handler agent_handler subscribed to system.health.check (total handlers for this event: 2)
+2025/07/05 22:09:07 [EventDrivenServer] Agent handler registered for 5 event types
+2025/07/05 22:09:07 [EventDrivenServer] All event handlers registered for 70+ event types
+2025/07/05 22:09:07 Registered Ollama model: cogito
+2025/07/05 22:09:07 Registered Ollama model: llama3.2:3b
+2025/07/05 22:09:07 Registered Ollama model: llama3.2:1b
+2025/07/05 22:09:07 Warning: Failed to register OpenAI models: OpenAI API key not set
+2025/07/05 22:09:07 [ContextManager] Configured consciousness with model manager, default model: ollama-cogito
+2025/07/05 22:09:07 Standard Solver Agent solver-12D3KooW started successfully
+2025/07/05 22:09:07 Agent registered: Primary Solver Agent (solver-12D3KooW)
+2025/07/05 22:09:07 [EventDrivenServer] Standard solver agent registered successfully
+2025/07/05 22:09:07 Cortex node started and listening on port 4891
+2025/07/05 22:09:07 Starting event-driven API server on :4891
+2025/07/05 22:09:07 Agent monitoring started
+2025/07/05 22:09:07 [EventDrivenServer] Starting event-driven server on :4891
+2025/07/05 22:09:07 [EventDrivenServer] WebSocket endpoint: ws://:4891/ws
+2025/07/05 22:09:07 Agent event: {"type":"agent_registered","agent_id":"solver-12D3KooW","timestamp":"2025-07-05T22:09:07.813535+08:00","data":{"name":"Primary Solver Agent","type":"solver"}}
+2025/07/05 22:09:07 Vector database saved to data/conversations/vector_db.json (4 documents)
+2025/07/05 22:09:08 [Consciousness] Starting consciousness runtime for node 12D3KooWHrxcsCRsxdzhRLqnGReXfeCGDPTv8QL95358zjnn1phH
+2025/07/05 22:09:08 [Consciousness] Beginning consciousness loop with 2s cycle interval
+2025/07/05 22:09:08 Updating causal ordering for transaction consensus_dec57580-38cc-4557-9ae5-ce3761e89dcf
+2025/07/05 22:09:08 Transaction consensus_dec57580-38cc-4557-9ae5-ce3761e89dcf has 0 direct dependencies: []
+2025/07/05 22:09:08 Transaction consensus_dec57580-38cc-4557-9ae5-ce3761e89dcf has 0 implicit dependencies: []
+2025/07/05 22:09:08 Updated causal chain for consensus_dec57580-38cc-4557-9ae5-ce3761e89dcf: 0 dependencies
+2025/07/05 22:09:08 Updated topological ordering with 1 transactions
+2025/07/05 22:09:08 Transaction consensus_dec57580-38cc-4557-9ae5-ce3761e89dcf finalized
+2025/07/05 22:09:08 Economic transaction dec57580-38cc-4557-9ae5-ce3761e89dcf finalized through consensus
+2025/07/05 22:09:18 [EventRouter] Created subscription for connection ws_1751724558515342000_mmmmmmmm
+2025/07/05 22:09:18 [WebSocketEventBridge] New connection established: ws_1751724558515342000_mmmmmmmm (user: anonymous)
+2025/07/05 22:09:18 🔌 WebSocket Handler: Connection ws_1751724558515342000_mmmmmmmm registered
+2025/07/05 22:09:18 [EventDrivenServer] WebSocket connection established: ws_1751724558515342000_mmmmmmmm (user: anonymous)
+2025/07/05 22:09:24 EventBus: Published event evt_20250705220924_yyyyyyyy (type: websocket.message, source: websocket_bridge, category: websocket)
+2025/07/05 22:09:24 [EventRouter] Routed request event websocket.message with correlation corr_1751724564391709000_iaaaaaaa
+2025/07/05 22:09:24 💾 EventStore: Stored event evt_20250705220924_yyyyyyyy (websocket.message) in 1.625µs
+2025/07/05 22:09:24 🔌 WebSocket Handler: Processing message event evt_20250705220924_yyyyyyyy for connection ws_1751724558515342000_mmmmmmmm
+2025/07/05 22:09:24 🔌 WebSocket Handler: Processing query message: 
+2025/07/05 22:09:24 🔍 HandleWebSocketMessage: Type=query, Method=, Data=map[query:hi use_rag:true]
+2025/07/05 22:09:24 ✅ Converting query message to request format
+2025/07/05 22:09:24 EventBus: Published event evt_20250705220924_iiaaaaaa (type: query.submit, source: websocket, category: rag)
+2025/07/05 22:09:24 💾 EventStore: Stored event evt_20250705220924_iiaaaaaa (query.submit) in 584ns
+2025/07/05 22:09:24 🤖 Agent Handler: Processing query submission evt_20250705220924_iiaaaaaa
+2025/07/05 22:09:24 EventBus: Published event evt_20250705220924_uuuuuuuu (type: query.started, source: agent, category: rag)
+2025/07/05 22:09:24 [APIEventHandler] Handling event: query.submit (correlation: query_1751724564391)
+2025/07/05 22:09:24 [EventRouter] No correlation context found for response query_1751724564391
+2025/07/05 22:09:24 ❌ Agent Query failed for evt_20250705220924_iiaaaaaa: failed to find suitable agent: no suitable agent found for query type: user_query
+2025/07/05 22:09:24 EventBus: Published event evt_20250705220924_qqqqqqqq (type: query.failed, source: agent, category: rag)
+2025/07/05 22:09:24 💾 EventStore: Stored event evt_20250705220924_uuuuuuuu (query.started) in 209ns
+2025/07/05 22:09:24 🧠 RAG Handler: Processing query submission evt_20250705220924_iiaaaaaa
+2025/07/05 22:09:24 EventBus: Published event evt_20250705220924_22222222 (type: query.response, source: api_handler, category: rag)
+2025/07/05 22:09:24 💾 EventStore: Stored event evt_20250705220924_uuuuuuuu (query.started) in 666ns
+2025/07/05 22:09:24 💾 EventStore: Stored event evt_20250705220924_22222222 (query.response) in 583ns
+2025/07/05 22:09:24 🔌 WebSocket Handler: Handling query response event evt_20250705220924_22222222
+2025/07/05 22:09:24 💾 EventStore: Stored event evt_20250705220924_qqqqqqqq (query.failed) in 500ns
+2025/07/05 22:09:24 EventBus: Published event evt_20250705220924_uuuuuuuu (type: query.started, source: rag, category: rag)
+2025/07/05 22:09:24 ✅ WebSocket Handler: Sending query response to connection ws_1751724558515342000_mmmmmmmm
+2025/07/05 22:09:24 ✅ WebSocket Handler: Query response sent successfully
+2025/07/05 22:09:24 AGI learned from query input: 0 concepts, 0 patterns, 0 insights
+2025/07/05 22:09:24 Added document with ID: doc_CONTEXT WI
+2025/07/05 22:09:24 ✅ RAG Query completed for evt_20250705220924_iiaaaaaa in 254.083µs
+2025/07/05 22:09:24 EventBus: Published event evt_20250705220924_22222222 (type: query.processed, source: rag, category: rag)
+2025/07/05 22:09:24 💾 EventStore: Stored event evt_20250705220924_22222222 (query.processed) in 959ns
+2025/07/05 22:09:24 Vector database saved to data/conversations/vector_db.json (4 documents)
+2025/07/05 22:09:24 Added document with ID: doc_Node: 12D3
+2025/07/05 22:09:24 Added document with ID: doc_CONTEXT WI
+2025/07/05 22:09:24 Added document with ID: doc_Node: 12D3
+2025/07/05 22:09:24 AGI learned from response input: 13678 concepts, 0 patterns, 0 insights
+2025/07/05 22:09:24 Failed to record AGI update to blockchain: failed to submit AGI update transaction: transaction validation failed
+2025/07/05 22:09:24 Vector database saved to data/conversations/vector_db.json (4 documents)
+2025/07/05 22:09:24 Vector database saved to data/conversations/vector_db.json (4 documents)
+2025/07/05 22:09:24 Vector database saved to data/conversations/vector_db.json (4 documents)
+2025/07/05 22:12:47 Received signal: terminated
+2025/07/05 22:12:47 Shutting down...

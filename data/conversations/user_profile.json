@@ -1,0 +1,1659 @@
+[
+  {
+    "id": "node_user_12D3KooWKEaxJp4gNkc9DLCruv2qkqGcDkDVQ4XWaEiK8gmdwrgn",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-22T17:16:52.930504-04:00",
+    "last_seen_at": "2025-08-22T17:17:17.195563-04:00",
+    "updated_at": "2025-08-22T17:16:52.930504-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWDzYGnqdZNrFf9jmTfSdSA3YJrL6UYhTSiay7Lcx69UXH",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-16T11:25:57.883771-04:00",
+    "last_seen_at": "2025-10-16T11:25:57.883771-04:00",
+    "updated_at": "2025-10-16T11:25:57.883771-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWLmLhHH7QJKsYzXo8m4xbB3CZQCnhKT5cLsWXfxa22jzv",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_2fe5ed50_2025-07-02"
+    ],
+    "created_at": "2025-07-02T16:13:38.839697+08:00",
+    "last_seen_at": "2025-07-02T16:13:38.840606+08:00",
+    "updated_at": "2025-07-02T16:13:38.840606+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWSNeYximnCtqTqpGh5FejqEPsPFSenMLudchSMH4Exppo",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-09-16T11:22:42.857321-04:00",
+    "last_seen_at": "2025-09-16T11:48:15.744915-04:00",
+    "updated_at": "2025-09-16T11:22:42.857321-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWFCPm13FSvy7WvNaf6wmWuYw56GBBLfc7UbMU2pvkAwao",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-16T11:15:55.496981-04:00",
+    "last_seen_at": "2025-10-16T11:16:29.696372-04:00",
+    "updated_at": "2025-10-16T11:15:55.496981-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWSV3DHJAVY8QMkvNeaEDbFEAn4XAUcaoqR4bvy7WNduVr",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_517d1950_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:48:59.855362+08:00",
+    "last_seen_at": "2025-07-05T15:48:59.855377+08:00",
+    "updated_at": "2025-07-05T15:48:59.855377+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWFjrHpEXRFpAWMpFrhpuk7jq8F9ZvPesFXmMyL8TFWReR",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T12:26:37.285507-04:00",
+    "last_seen_at": "2025-08-08T12:26:54.651666-04:00",
+    "updated_at": "2025-08-08T12:26:37.285507-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWFfukCZcms5HHoj3GYZtjhz4cCqr9jTvtW2uCHcnFNDCt",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-22T14:28:59.905762-04:00",
+    "last_seen_at": "2025-08-22T14:41:31.811511-04:00",
+    "updated_at": "2025-08-22T14:28:59.905762-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWP9DXpsYuUffYECwaJERTj5ij93nxSiTbgjtba3EVAmuD",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:42:07.466253+08:00",
+    "last_seen_at": "2025-07-05T22:42:13.503045+08:00",
+    "updated_at": "2025-07-05T22:42:07.466253+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWCHHtZFKqNp3QSBHseZvQpEgJPvHb2zG1JUHW1juaHsZJ",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_763e34f1_2025-07-05"
+    ],
+    "created_at": "2025-07-05T16:01:51.780664+08:00",
+    "last_seen_at": "2025-07-05T16:02:19.316186+08:00",
+    "updated_at": "2025-07-05T16:01:51.781325+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJfpaRWhEMHdEYRMRgSugTjhvVz9QVCZWAAyx9EhfDF2p",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-16T11:32:23.148332-04:00",
+    "last_seen_at": "2025-10-16T11:32:23.148332-04:00",
+    "updated_at": "2025-10-16T11:32:23.148332-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWH2bwRAwSgpwUGxQjKwqafiKYVFkZJyWiiMjKCb4GcoFn",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T09:50:08.553135-04:00",
+    "last_seen_at": "2025-08-08T09:50:49.497663-04:00",
+    "updated_at": "2025-08-08T09:50:08.553135-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWSSuJkpnetC1Vc5FU2bteTSwoC6SknBBgUygi9DrQUcgb",
+    "name": "chad",
+    "preferred_name": "chad",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {
+      "extracted_name": "chad"
+    },
+    "conversation_ids": [],
+    "created_at": "2025-08-09T16:04:36.189595-04:00",
+    "last_seen_at": "2025-08-09T16:05:50.131495-04:00",
+    "updated_at": "2025-08-09T16:04:57.510697-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWCoyJF82SmTGx7NzwxhXZHx4EyMQgKC6ZjH1iTXcRqURe",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:39:47.610044+08:00",
+    "last_seen_at": "2025-07-05T22:39:53.048779+08:00",
+    "updated_at": "2025-07-05T22:39:47.610044+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWADYroLJmFyeEHr7Wr7e4AARQe97vPfJWbtKf5aBPovx1",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_add5300d_2025-07-05"
+    ],
+    "created_at": "2025-07-05T16:05:29.42513+08:00",
+    "last_seen_at": "2025-07-05T18:27:21.449796+08:00",
+    "updated_at": "2025-07-05T16:05:29.425147+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWE2FXShwM5Yh3ATZMjfCRgvFyTHnRA314CUvwSMpwMEce",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_7f35e1ff_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:42:37.159312+08:00",
+    "last_seen_at": "2025-07-05T15:42:40.253574+08:00",
+    "updated_at": "2025-07-05T15:42:37.160201+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWSyfrcHj5rYsu1qyamLuz7tJxDVD6W1HPdKxNA4VqfD7n",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_34a3cfdb_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:24:19.657279+08:00",
+    "last_seen_at": "2025-07-02T14:24:34.817017+08:00",
+    "updated_at": "2025-07-02T14:24:19.657293+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWL5etPWi5JUrR7VZTMmRyB44DTAQ25W1SSrdfvb4w32d2",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_2f94043c_2025-07-02"
+    ],
+    "created_at": "2025-07-02T16:11:14.624629+08:00",
+    "last_seen_at": "2025-07-02T16:11:14.62534+08:00",
+    "updated_at": "2025-07-02T16:11:14.62534+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWRuQo17LkuZmNPk6iHhdHMe49pyySQo2D9QySeJurkaXK",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T21:05:11.056001-04:00",
+    "last_seen_at": "2025-08-09T21:06:45.463089-04:00",
+    "updated_at": "2025-08-09T21:05:11.056001-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWMshzEKfmVg7wMQ7NKTa53DcwS2K6C725unThaQ4WyVvr",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_3d403a7f_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:04:26.083351+08:00",
+    "last_seen_at": "2025-07-02T15:04:28.829033+08:00",
+    "updated_at": "2025-07-02T15:04:26.083373+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWApkMEy2JMWJmb6ekiXJZ61zUogKQo4UsYwnsqtbaFtrq",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_256b0a85_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:04:14.730718+08:00",
+    "last_seen_at": "2025-07-02T15:04:18.590363+08:00",
+    "updated_at": "2025-07-02T15:04:14.730739+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWKQ45REXaj2YsZNWwDbPeQg7i7Wva1z3TbrrmJgoDdbAg",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_391f40cd_2025-07-02"
+    ],
+    "created_at": "2025-07-02T13:47:30.008155+08:00",
+    "last_seen_at": "2025-07-02T13:49:36.687029+08:00",
+    "updated_at": "2025-07-02T13:47:30.008293+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJ3kHGfwPZ16uuc5HvoBjZpALKt1p6vHcV9cmkWxNDhhj",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_18a60952_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:49:06.300491+08:00",
+    "last_seen_at": "2025-07-05T15:49:13.355594+08:00",
+    "updated_at": "2025-07-05T15:49:06.300512+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWQbdsxA2zmDd8qyPwRvz3BSpZCMdLBZx79ezfprYhVDaA",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_68d61268_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:10:48.853071+08:00",
+    "last_seen_at": "2025-07-05T13:10:56.039422+08:00",
+    "updated_at": "2025-07-05T13:10:48.853622+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWAfLRs8jPQffkUJnJnnqm3WhhUJW5A9tZVCjmxyQffRKh",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_4672b7c9_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:18:02.737652+08:00",
+    "last_seen_at": "2025-07-02T15:18:05.868987+08:00",
+    "updated_at": "2025-07-02T15:18:02.737689+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWR5sTxnT2oCbgQ94UCXeKnwTgzhDQnoPUG2XqY89WuGja",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_245d4fc7_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:45:28.226275+08:00",
+    "last_seen_at": "2025-07-02T15:45:28.936017+08:00",
+    "updated_at": "2025-07-02T15:45:28.226301+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWBiZUiQro7nWVEDRnzN86qu6Nx3DeCz612bG2QSE2m3Zu",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_7379fe6f_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:48:16.697675+08:00",
+    "last_seen_at": "2025-07-02T14:48:44.182346+08:00",
+    "updated_at": "2025-07-02T14:48:16.697695+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWD7Zv4tbR2hwh6wvVq2hXARpKXS4Fw78BCCEaPwduZhGQ",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_3617590d_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:57:54.889835+08:00",
+    "last_seen_at": "2025-07-02T14:58:01.478472+08:00",
+    "updated_at": "2025-07-02T14:57:54.889852+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWLFJSfin7FFupwZBexLvL3tCbnaUtV1gvEKGzUfYUUxv1",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_2a691a78_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:57:45.267514+08:00",
+    "last_seen_at": "2025-07-05T16:01:17.063657+08:00",
+    "updated_at": "2025-07-05T15:57:45.267533+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWPXAj2HiR1KtdZDL5GxJeYtKtvfXLbNmDCPxBhkuNNevz",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_40960ed1_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:09:38.541371+08:00",
+    "last_seen_at": "2025-07-05T13:09:57.240892+08:00",
+    "updated_at": "2025-07-05T13:09:38.541956+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWNZJHd2zK7JRExP8PEkJmxBHw7BjLzn1NvW9uCfkREP9S",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_538bf4c1_2025-07-02"
+    ],
+    "created_at": "2025-07-02T13:44:36.996059+08:00",
+    "last_seen_at": "2025-07-02T13:46:27.957361+08:00",
+    "updated_at": "2025-07-02T13:44:36.996082+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWR5MRUMKGVBUq1Piazj519gA1mWaC6oDrGA4sC963Wavg",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_15af5114_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:48:53.527153+08:00",
+    "last_seen_at": "2025-07-05T15:48:53.527171+08:00",
+    "updated_at": "2025-07-05T15:48:53.527171+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWPs6b1EHGMjqsy9PJxHx1xxy6Vqcc2JuwWF6rhtskACrK",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_57387d64_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:01:01.486098+08:00",
+    "last_seen_at": "2025-07-02T15:01:01.486119+08:00",
+    "updated_at": "2025-07-02T15:01:01.486119+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWL8MhtfGJPL1nNrSuDEXt3EHnTod5ZAB1P4o4HrVUu4PM",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_4828e5e6_2025-07-02"
+    ],
+    "created_at": "2025-07-02T13:51:34.145706+08:00",
+    "last_seen_at": "2025-07-02T14:00:57.615775+08:00",
+    "updated_at": "2025-07-02T13:51:34.145726+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWAUVVVtsUnjuJgZb4de9YAZQc9qBcMabDKcVucdgTfe8i",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_6bbde6af_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:01:45.466245+08:00",
+    "last_seen_at": "2025-07-02T14:04:10.259826+08:00",
+    "updated_at": "2025-07-02T14:01:45.46628+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWLS3sMAu6pM7GCSAxj22AUqfmPa2NbxcgjFhyiGBcuvSY",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T18:54:41.558135-04:00",
+    "last_seen_at": "2025-08-09T18:55:01.597601-04:00",
+    "updated_at": "2025-08-09T18:54:41.558135-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWQvzbsjv1VWnZYrkYif9dAzXkYAR5KaYoDRjsTBd5vzqz",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_5ec47b9d_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:17:06.737561+08:00",
+    "last_seen_at": "2025-07-02T15:17:22.227096+08:00",
+    "updated_at": "2025-07-02T15:17:06.737608+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJEzQKGYqXsZxNZ5ZdsK9EofCABFRu1p14eBn7VNUuM8i",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T16:54:50.283684-04:00",
+    "last_seen_at": "2025-08-09T16:55:24.697218-04:00",
+    "updated_at": "2025-08-09T16:54:50.283684-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWNEbPtsVomVBqtTBEdBDLkZdLmMjLKTDNFbbDuBFKUD5A",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_5a452e2d_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:07:36.337557+08:00",
+    "last_seen_at": "2025-07-02T15:07:39.356541+08:00",
+    "updated_at": "2025-07-02T15:07:36.338275+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWNa1jMrhuzYdyShC7PhpKFe5Z7NtQcNpL1mibYPVZtjof",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T15:42:20.789065-04:00",
+    "last_seen_at": "2025-08-09T15:42:53.298279-04:00",
+    "updated_at": "2025-08-09T15:42:20.789065-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWBg9CzWVafUcV6UUiRq611kVQvUxXGTdvAKfNHxsVCiMN",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T15:25:56.509156-04:00",
+    "last_seen_at": "2025-08-09T15:36:56.618848-04:00",
+    "updated_at": "2025-08-09T15:25:56.509156-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWNdk43gM7dio4avhPg3BceBGkCoEJHeaUBzusyUngQhKi",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_6aa19600_2025-07-02"
+    ],
+    "created_at": "2025-07-02T11:27:03.366238+08:00",
+    "last_seen_at": "2025-07-02T11:32:27.732935+08:00",
+    "updated_at": "2025-07-02T11:27:03.36669+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWL6rnUcRxiLzwz5B8ageTwiChK4w5UesfKXrqj81JMHug",
+    "name": "Chad",
+    "preferred_name": "Chad",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {
+      "extracted_name": "Chad",
+      "work_mention": "software engineer working on AI systems"
+    },
+    "conversation_ids": [],
+    "created_at": "2025-08-09T15:56:34.926693-04:00",
+    "last_seen_at": "2025-08-09T15:56:35.557872-04:00",
+    "updated_at": "2025-08-09T15:56:34.932106-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWPfaDUSmrTL42YKhk2dMxcpCvSQzHaSs489iyiLBqLu48",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_589e206e_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:16:50.072491+08:00",
+    "last_seen_at": "2025-07-02T14:18:39.940859+08:00",
+    "updated_at": "2025-07-02T14:16:50.072508+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWRHtjaGSLvvZdVLBoeMeNpRR3U6CTCCsa1HnLR9guu2j8",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_740f2744_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:20:28.164007+08:00",
+    "last_seen_at": "2025-07-02T14:22:08.642396+08:00",
+    "updated_at": "2025-07-02T14:20:28.164023+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWCYP7txT1C1WfeaLMAT3jD3w1PwykiY5hP4mAyhpBfxCt",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:35:19.168027+08:00",
+    "last_seen_at": "2025-07-05T22:35:56.718473+08:00",
+    "updated_at": "2025-07-05T22:35:19.168027+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWRWd6aTz5NNCVw8Pv7msjRySngNb5S2MwoaUmEQYWtw4Q",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T12:31:29.553878-04:00",
+    "last_seen_at": "2025-08-08T12:32:07.453271-04:00",
+    "updated_at": "2025-08-08T12:31:29.553878-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWA4pQKhhrrL43mNLVW3BPgchGtdWhio2DBSLWQxmpG88f",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-16T12:04:30.553057-04:00",
+    "last_seen_at": "2025-10-16T12:04:30.553057-04:00",
+    "updated_at": "2025-10-16T12:04:30.553057-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWFT7JxBAkhBTSgyb1QEGw32WSfg9fMho7BgaeZ8YUTbeX",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_5073cc67_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:10:33.914271+08:00",
+    "last_seen_at": "2025-07-05T13:10:33.914291+08:00",
+    "updated_at": "2025-07-05T13:10:33.914291+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWFs6kffsqKUGJahJVtmzK9QUq2FuBbDqcWu3NQr6TvWb5",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-17T15:22:08.143242-04:00",
+    "last_seen_at": "2025-10-17T15:22:08.143242-04:00",
+    "updated_at": "2025-10-17T15:22:08.143242-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWQDU8o6GYU5oARUbtNAn4yyApEuwgRP2HZqDLDBTHtXZA",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_6aab2918_2025-07-02"
+    ],
+    "created_at": "2025-07-02T11:32:31.180027+08:00",
+    "last_seen_at": "2025-07-02T12:11:06.818064+08:00",
+    "updated_at": "2025-07-02T11:32:31.18051+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWAv2A3F2JYiVjZsGRd8LUJst7gFuAhn6Q9Dk4c6UmABmp",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_28994651_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:10:18.937021+08:00",
+    "last_seen_at": "2025-07-05T13:10:18.937038+08:00",
+    "updated_at": "2025-07-05T13:10:18.937038+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWNsFHP8AwqK927H43QbKp9hEsTTVTTktxztnEo5ossWBW",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_3d52f29f_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:21:03.743209+08:00",
+    "last_seen_at": "2025-07-02T15:21:06.245224+08:00",
+    "updated_at": "2025-07-02T15:21:03.743249+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWN8b2QP4kcYTNtgniq9gPv9bmaFfcFSCWr1VkJ4gigVbB",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-17T14:59:29.848934-04:00",
+    "last_seen_at": "2025-10-17T14:59:37.454185-04:00",
+    "updated_at": "2025-10-17T14:59:29.848935-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWPKHAua3UyqDhy8R42PnvZLgyNZt4NaxmVB7YrYVzxW7C",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_70b6f850_2025-06-30"
+    ],
+    "created_at": "2025-06-30T23:38:23.920248+08:00",
+    "last_seen_at": "2025-06-30T23:49:54.908754+08:00",
+    "updated_at": "2025-06-30T23:38:23.920268+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJn1KWUXPt9KLzPywgqPXpXreLSQihujF6a6TdfgtYFry",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:28:41.532827+08:00",
+    "last_seen_at": "2025-07-05T22:28:44.263363+08:00",
+    "updated_at": "2025-07-05T22:28:41.532827+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWLSwJ7e3X6zzZNUsvigWpdkF6i9me9G4eqENgdywQR3xV",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_5ee2380a_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:46:08.727618+08:00",
+    "last_seen_at": "2025-07-05T15:20:29.549938+08:00",
+    "updated_at": "2025-07-05T13:46:08.727636+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJkprdqnSB9EeMoE4K861wW5FCYXsA43r5cWSM3thm49E",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-29T13:30:27.580659-04:00",
+    "last_seen_at": "2025-10-29T13:30:49.886019-04:00",
+    "updated_at": "2025-10-29T13:30:27.580659-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWJSq2bvmFCZR1ZLiGQdFXN3eMHu3vaktFoAYaGxu4Xvjx",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-16T11:29:08.206866-04:00",
+    "last_seen_at": "2025-10-16T11:29:08.206866-04:00",
+    "updated_at": "2025-10-16T11:29:08.206866-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWFUGK9ndRCTGK4pUxZkMxDL1eJNDCRkNMmJDH4XJehj97",
+    "name": "chad",
+    "preferred_name": "chad",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {
+      "extracted_name": "chad"
+    },
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:54:17.521032+08:00",
+    "last_seen_at": "2025-07-05T22:56:32.304222+08:00",
+    "updated_at": "2025-07-05T22:55:23.461261+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJq2CwwyLTH8daQj54uViV6DMAWQBee8vXgZM8EabSQCo",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_7ba18070_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:58:16.15417+08:00",
+    "last_seen_at": "2025-07-02T14:58:29.839595+08:00",
+    "updated_at": "2025-07-02T14:58:16.154189+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWRvVajNGGKoKGzU1gYxQHKmMUPtNMS1GsMiqdtLZNU9tv",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_69cc17a6_2025-07-02"
+    ],
+    "created_at": "2025-07-02T12:22:48.073707+08:00",
+    "last_seen_at": "2025-07-02T13:08:35.415012+08:00",
+    "updated_at": "2025-07-02T12:22:48.074155+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWATRkc3SqJDyVrrDPzyyQVrN4EjQ8cM5spDAXQY71PpWT",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_52b8f018_2025-07-02"
+    ],
+    "created_at": "2025-07-02T12:18:25.864081+08:00",
+    "last_seen_at": "2025-07-02T12:18:37.57499+08:00",
+    "updated_at": "2025-07-02T12:18:25.864097+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWCf6ooM9EBPV8Dac8cMj65MwYuP5bLPuGZdJFZGEipuf1",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T16:08:08.085657-04:00",
+    "last_seen_at": "2025-08-09T16:08:58.067534-04:00",
+    "updated_at": "2025-08-09T16:08:08.085657-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWCw5ZM3vEakyZNtRXBPw5aYFBP7PtLdeDaHgYo1mEsQkH",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:36:40.567822+08:00",
+    "last_seen_at": "2025-07-05T22:36:42.115591+08:00",
+    "updated_at": "2025-07-05T22:36:40.567822+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWD9xqJu4X84DEd8EjtSrTDn6UBMnD3BJFbQ67moxn4uCT",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_5fc64f8b_2025-07-02"
+    ],
+    "created_at": "2025-07-02T16:23:29.158234+08:00",
+    "last_seen_at": "2025-07-02T16:23:41.075378+08:00",
+    "updated_at": "2025-07-02T16:23:29.158251+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWFo1rVcRoxZvsmnZzusChDipgE366yRCQjczQXetRn5LB",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_6346e19e_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:08:45.468886+08:00",
+    "last_seen_at": "2025-07-05T13:08:57.490781+08:00",
+    "updated_at": "2025-07-05T13:08:45.469456+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJ2bHpL4sXWL15XrNf9Jj15TsfHdJsUwHnMU3NNfkKM33",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_4e810270_2025-07-05"
+    ],
+    "created_at": "2025-07-05T16:02:33.835939+08:00",
+    "last_seen_at": "2025-07-05T16:02:33.835962+08:00",
+    "updated_at": "2025-07-05T16:02:33.835962+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWBwL6vkQmcSdaa1TA22sq5P8M8FzRifFtd9qkv7zyrBp9",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_6d8b65cb_2025-07-03"
+    ],
+    "created_at": "2025-07-03T19:57:59.775461+08:00",
+    "last_seen_at": "2025-07-03T19:58:30.513815+08:00",
+    "updated_at": "2025-07-03T19:57:59.776027+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWCQxmZ8nmnwqccVgd9ZeeHXQCky8n2VdyDx9hL3fnHK1Z",
+    "name": "chad",
+    "preferred_name": "chad",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {
+      "extracted_name": "chad"
+    },
+    "conversation_ids": [],
+    "created_at": "2025-11-21T13:06:38.368466-05:00",
+    "last_seen_at": "2025-11-21T13:41:50.413692-05:00",
+    "updated_at": "2025-11-21T13:41:40.672699-05:00"
+  },
+  {
+    "id": "node_user_12D3KooWRKWaH66To3oCeEHLtRUWJntQJ4sMwTVdXB5m9Xw64kBD",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-16T11:50:25.946417-04:00",
+    "last_seen_at": "2025-10-16T11:57:39.119103-04:00",
+    "updated_at": "2025-10-16T11:50:25.946417-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWE8jCNTpij8cNq7NUPvURJ1woS2QTXT64nTTjGLZhYRT3",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_7d529268_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:29:06.41199+08:00",
+    "last_seen_at": "2025-07-05T15:29:11.108588+08:00",
+    "updated_at": "2025-07-05T15:29:06.412008+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWH5XkBF9JddPn77WWsfXtCxv1MTxdTeFZeAB5zfJ45FPn",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T10:16:44.237149-04:00",
+    "last_seen_at": "2025-08-08T10:16:52.741568-04:00",
+    "updated_at": "2025-08-08T10:16:44.237149-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWSbrcDCva3kpnJExJ2sFES1BmwEQWxf17NXweuxVtks1k",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_196f7ec8_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:07:26.74779+08:00",
+    "last_seen_at": "2025-07-05T13:07:35.84318+08:00",
+    "updated_at": "2025-07-05T13:07:26.748324+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWMTyvjov7FYMoMi49kEcGkLFYWHHUBMnVxiEW4r5VCdxT",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_7920da81_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:25:02.56289+08:00",
+    "last_seen_at": "2025-07-02T14:25:06.349412+08:00",
+    "updated_at": "2025-07-02T14:25:02.562908+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWEdpR569N1rTXyvgGjB9mt653Ly1KjnGPk8GwmRhxeG13",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_3e7c5232_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:32:16.823761+08:00",
+    "last_seen_at": "2025-07-02T15:32:23.299914+08:00",
+    "updated_at": "2025-07-02T15:32:16.823776+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWH3M6zrpRaNMW79QasApSysG9B1JMFnmHy4NxaqLFt44p",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:29:54.639686+08:00",
+    "last_seen_at": "2025-07-05T22:30:43.358303+08:00",
+    "updated_at": "2025-07-05T22:29:54.639686+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWREq5sCNhbZDkqFuqa7c8BRigb7oBpWMSe2apXVbkhAsP",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T10:59:56.854043-04:00",
+    "last_seen_at": "2025-08-08T11:33:27.126613-04:00",
+    "updated_at": "2025-08-08T10:59:56.854043-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWKNYAC9Y6xqTukiA2RHrA5hRDowGhFAh7izKF48jdpyB6",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_116628f8_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:41:23.958192+08:00",
+    "last_seen_at": "2025-07-05T15:41:45.196259+08:00",
+    "updated_at": "2025-07-05T15:41:23.95822+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWDGmuZYxHFdWCawdY2KjoV4CkVUXVpNrPGfLcyf9P6yLb",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_61333a48_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:24:03.744605+08:00",
+    "last_seen_at": "2025-07-02T15:24:10.046737+08:00",
+    "updated_at": "2025-07-02T15:24:03.744622+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWR6TRX5CqSx8MCJLUpeJU9FXEjpLD6AMfg1EVdWnY3c3H",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_68e6b04d_2025-07-05"
+    ],
+    "created_at": "2025-07-05T11:50:31.857082+08:00",
+    "last_seen_at": "2025-07-05T11:51:09.979176+08:00",
+    "updated_at": "2025-07-05T11:50:31.857969+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWEzhFrJZb6QtGuDdW6Z9yJSQyi6EvgsPBEeDmK2sBrLg4",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_5325c883_2025-07-02"
+    ],
+    "created_at": "2025-07-02T12:21:09.29253+08:00",
+    "last_seen_at": "2025-07-02T12:21:09.378191+08:00",
+    "updated_at": "2025-07-02T12:21:09.29255+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJ6JLqZmQDamAdaWef8b4WYiPk7sRgxb5gu7NbtEWz8bw",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_186251a3_2025-07-05"
+    ],
+    "created_at": "2025-07-05T16:03:13.439628+08:00",
+    "last_seen_at": "2025-07-05T16:03:41.062739+08:00",
+    "updated_at": "2025-07-05T16:03:13.439652+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWPNQbvNuASL3YkvLmmw82SKP2KTFXeD8Tp2eosbEG7mSh",
+    "name": "your",
+    "preferred_name": "your",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {
+      "extracted_name": "your"
+    },
+    "conversation_ids": [],
+    "created_at": "2025-08-09T16:52:02.814495-04:00",
+    "last_seen_at": "2025-08-09T16:53:08.486942-04:00",
+    "updated_at": "2025-08-09T16:53:02.080675-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWJe9MFiH2Z5EUXfytUyQALRkxshShLbQtzhNxYYm8HXR1",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-17T15:17:43.712649-04:00",
+    "last_seen_at": "2025-10-17T15:21:10.959254-04:00",
+    "updated_at": "2025-10-17T15:17:43.71265-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWL95jaYeQBJG2es6e3p3oJ7e8FT1iQER1Y2gZforUS8Vr",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T18:51:07.46275-04:00",
+    "last_seen_at": "2025-08-09T18:51:36.787746-04:00",
+    "updated_at": "2025-08-09T18:51:07.46275-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWADbPKsc8d3h2s4rqXo51z1sxapBnoXEXctPoEEAbpB8U",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T00:58:13.984552-04:00",
+    "last_seen_at": "2025-08-08T00:58:58.494834-04:00",
+    "updated_at": "2025-08-08T00:58:13.984552-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWPNAadQsP8zddYx6DmPt69LcyqTVzW8YNmsYzRVtLmF9M",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:46:22.532841+08:00",
+    "last_seen_at": "2025-07-05T22:51:13.522618+08:00",
+    "updated_at": "2025-07-05T22:46:22.532841+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWAiVB8aTGyhYcGxFBMgqtb4XUN6sTdmk7ry3Wgc9zVEME",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-09-15T19:36:13.919225-04:00",
+    "last_seen_at": "2025-09-15T19:37:26.846756-04:00",
+    "updated_at": "2025-09-15T19:36:13.919225-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWKVQmPbYSFHwNXqUn6T162iV5pD5L6Z2HXRcd8D1ZfobP",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_4d38245e_2025-07-02"
+    ],
+    "created_at": "2025-07-02T16:11:05.51977+08:00",
+    "last_seen_at": "2025-07-02T16:11:05.520374+08:00",
+    "updated_at": "2025-07-02T16:11:05.520374+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJyoD82H3XdCMpFCHg3eFhsYDcAnBvB1EaqVDXiH8VQ9b",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_2a03a021_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:10:25.343537+08:00",
+    "last_seen_at": "2025-07-05T13:10:25.343559+08:00",
+    "updated_at": "2025-07-05T13:10:25.343559+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWBWhJF9RgBfFoRGRHXfVKCa5MbGcByykKGzQfC6svgKd8",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-16T12:09:14.292313-04:00",
+    "last_seen_at": "2025-10-16T12:09:43.914286-04:00",
+    "updated_at": "2025-10-16T12:09:14.292313-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWPy11iADTwjfZWyfS88zEH5buxpfm7HizKNmpbcYjUWXB",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T00:17:49.850368-04:00",
+    "last_seen_at": "2025-08-08T00:42:03.43803-04:00",
+    "updated_at": "2025-08-08T00:17:49.850368-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWAnVN8jDDfp4Lh7wgULR8WRBkEiURrRf9zvHq9BFkxNt2",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-01T11:23:27.88074+08:00",
+    "last_seen_at": "2025-10-01T11:23:27.88074+08:00",
+    "updated_at": "2025-10-01T11:23:27.88074+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWSCUgCqtErqaN1F1Ejd856eRVFUYwnkaoSJRkpr6paLTu",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_6869ad55_2025-07-02"
+    ],
+    "created_at": "2025-07-02T16:20:47.357496+08:00",
+    "last_seen_at": "2025-07-02T16:20:49.759704+08:00",
+    "updated_at": "2025-07-02T16:20:47.357519+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWSD8ga1bUkhviaXHd5cJ45vB2Zi8PzmrhAYDei7JkCvne",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T18:56:51.386179-04:00",
+    "last_seen_at": "2025-08-09T18:56:51.386179-04:00",
+    "updated_at": "2025-08-09T18:56:51.386179-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWANXsagxAe6mQBbKXjfshLWyd61qUzztrwr3qpsP412qK",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T18:59:11.054824-04:00",
+    "last_seen_at": "2025-08-09T18:59:30.951704-04:00",
+    "updated_at": "2025-08-09T18:59:11.054824-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWSWQ24oR3rhRxMUs8Z3mKSLY35X9qrFH9Kp2ge1BivECN",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_1c062663_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:43:22.698776+08:00",
+    "last_seen_at": "2025-07-05T15:48:38.687857+08:00",
+    "updated_at": "2025-07-05T15:43:22.699368+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWPT7gcArU7aTDVvJswH7E4ADhijecb7fNJBRptasGjJse",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_9dfea9f0_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:10:05.651755+08:00",
+    "last_seen_at": "2025-07-05T13:10:12.439161+08:00",
+    "updated_at": "2025-07-05T13:10:05.651772+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWKq8qp7BrGaZDxugP6JHg3JFSucB8xLFPsLD3bcy9D7Nw",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-11-21T11:59:31.344947-05:00",
+    "last_seen_at": "2025-11-21T12:51:19.408278-05:00",
+    "updated_at": "2025-11-21T11:59:31.344947-05:00"
+  },
+  {
+    "id": "node_user_12D3KooWKmeJ4fnzdhHybHFJM4JpmFc8xS58ocVVebXL7aXeRyxa",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_230dd8ea_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:09:11.274964+08:00",
+    "last_seen_at": "2025-07-05T13:09:27.903958+08:00",
+    "updated_at": "2025-07-05T13:09:11.274985+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWM19UBGYg1gkVKdamFSym3x18Tnr3Pp8PBsStAGLyZQmh",
+    "name": "Chad",
+    "preferred_name": "Chad",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {
+      "extracted_name": "Chad"
+    },
+    "conversation_ids": [
+      "user_persistent_12D3KooW_73cc3457_2025-06-30"
+    ],
+    "created_at": "2025-06-30T23:21:43.460825+08:00",
+    "last_seen_at": "2025-06-30T23:28:41.123764+08:00",
+    "updated_at": "2025-06-30T23:22:27.326809+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWADDA9FZL9kFKk6NuPGdW5KmRs5eSxLSCdaUmDBuggjPr",
+    "name": "chad",
+    "preferred_name": "chad",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {
+      "extracted_name": "chad"
+    },
+    "conversation_ids": [],
+    "created_at": "2025-08-09T16:00:16.036609-04:00",
+    "last_seen_at": "2025-08-09T16:01:48.782768-04:00",
+    "updated_at": "2025-08-09T16:00:18.735945-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWMzT84xosbjPJyEGQozupgmaU1AnPteTbkfFe1MhCoSKY",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_3091309e_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:51:19.048492+08:00",
+    "last_seen_at": "2025-07-02T14:56:50.735579+08:00",
+    "updated_at": "2025-07-02T14:51:19.048511+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWGZ7wwpkGtXSajE1uXkoH5m7VVDGegwFRJBXhXr3hbj6P",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-07T13:56:43.08926-04:00",
+    "last_seen_at": "2025-08-07T13:57:04.750471-04:00",
+    "updated_at": "2025-08-07T13:56:43.08926-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWNsWj3JPqBMSDNMnw2DSvjENs8FtpAgZfWHBoSkgrG8rk",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-07-05T22:44:33.998828+08:00",
+    "last_seen_at": "2025-07-05T22:44:41.241123+08:00",
+    "updated_at": "2025-07-05T22:44:33.998828+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWPdy68895ZTn3AgY9NCcr6zP8djPcD8vasmmebMmzeKTk",
+    "name": "Chad",
+    "preferred_name": "Chad",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {
+      "extracted_name": "Chad"
+    },
+    "conversation_ids": [
+      "user_persistent_12D3KooW_461e7578_2025-06-30"
+    ],
+    "created_at": "2025-06-30T23:55:20.917778+08:00",
+    "last_seen_at": "2025-06-30T23:57:26.284865+08:00",
+    "updated_at": "2025-06-30T23:55:55.673379+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWP6UksDqkeU9dMVQfZAip3BBLmUJj6Y6w9NkU6jSZT38i",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_72dac6b0_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:11:07.828266+08:00",
+    "last_seen_at": "2025-07-02T15:15:45.409376+08:00",
+    "updated_at": "2025-07-02T15:11:07.828281+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWLif5iibkyTgGW3yZsS3Pw6pQ31kGugDGCAJ9trpSufQR",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_6814abbd_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:48:46.987578+08:00",
+    "last_seen_at": "2025-07-05T15:48:46.987598+08:00",
+    "updated_at": "2025-07-05T15:48:46.987598+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWGJnD98uYsjNtkwLaMWcguCHsk1dqsK592Hz3Yu3kBiyo",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-09T18:43:29.734672-04:00",
+    "last_seen_at": "2025-08-09T18:43:29.734673-04:00",
+    "updated_at": "2025-08-09T18:43:29.734673-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWEivi1jisLUUEfthMg5qQioTvTC9jkzzbU9hfc212xugh",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_58ca61db_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:31:54.680989+08:00",
+    "last_seen_at": "2025-07-02T14:42:40.702925+08:00",
+    "updated_at": "2025-07-02T14:31:54.681011+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWMeTvtUTJkiDurBCevLbD8KsrSgbMEnZ2UJx7jZCVRNP5",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-10-16T11:21:57.276609-04:00",
+    "last_seen_at": "2025-10-16T11:21:57.276635-04:00",
+    "updated_at": "2025-10-16T11:21:57.276609-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWH1K6SF2q15WHuFwd8VYWZFs75vuvC2taVyry5eQmmMvQ",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_7d2ce180_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:08:04.80461+08:00",
+    "last_seen_at": "2025-07-02T15:08:46.888936+08:00",
+    "updated_at": "2025-07-02T15:08:04.804625+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWJsAeaDCzc2Lm6zVzaDGBTw134s4e4GpXJb9NLZXhByit",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_3c38ae70_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:51:44.261483+08:00",
+    "last_seen_at": "2025-07-05T15:51:44.261506+08:00",
+    "updated_at": "2025-07-05T15:51:44.261506+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWASubrfS4ZEoSbcVF4RipTD7v1uEFVcCnQ1VVqQzavWUK",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T00:51:20.96539-04:00",
+    "last_seen_at": "2025-08-08T00:52:19.944268-04:00",
+    "updated_at": "2025-08-08T00:51:20.96539-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWCrX4Yv8kdGdCNB2MUFxESdB5CauTYG289VFiHYUsCwE8",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_2ce9ec86_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:42:42.544154+08:00",
+    "last_seen_at": "2025-07-05T13:45:27.177894+08:00",
+    "updated_at": "2025-07-05T13:42:42.544171+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWAhpEDBBbFag7qocG9d3DARmJv6dyXpFeaEjDiAcNqcxv",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-21T15:19:50.490195-04:00",
+    "last_seen_at": "2025-08-21T16:02:54.511946-04:00",
+    "updated_at": "2025-08-21T15:19:50.490195-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWMFnLCCNrkdhgxh7KLEtJyqcJ4LLcHqvWNphfepsyWTB3",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_49eb3f47_2025-07-02"
+    ],
+    "created_at": "2025-07-02T15:29:36.149688+08:00",
+    "last_seen_at": "2025-07-02T15:29:38.447198+08:00",
+    "updated_at": "2025-07-02T15:29:36.151616+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWEeMkSZDsDcgXTMqRvfC4mR7WSM7yUMrdyXNzLtNfikoa",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_30b617d5_2025-07-02"
+    ],
+    "created_at": "2025-07-02T14:27:22.771632+08:00",
+    "last_seen_at": "2025-07-02T14:27:54.452068+08:00",
+    "updated_at": "2025-07-02T14:27:22.772151+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWQdwYrHSaK7PFhEyXjvyeYSMrsf9pr1QXVUVPJRir48ZD",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-09-16T11:22:13.774566-04:00",
+    "last_seen_at": "2025-09-16T11:22:13.774566-04:00",
+    "updated_at": "2025-09-16T11:22:13.774567-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWNHmhcDgPKd9ZD9REbvWZLUVAT2HvcoK4DFiGDeJUfEqL",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-21T13:47:19.243263-04:00",
+    "last_seen_at": "2025-08-21T13:47:42.123408-04:00",
+    "updated_at": "2025-08-21T13:47:19.243263-04:00"
+  },
+  {
+    "id": "node_user_12D3KooWBcwZ7GgWrBT1iJGyoNtXRUGV5dnCMcZVTHNsMq14GmNT",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_45dac8ba_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:35:11.704798+08:00",
+    "last_seen_at": "2025-07-05T15:35:11.704816+08:00",
+    "updated_at": "2025-07-05T15:35:11.704816+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWCvA4E5ZXorqFLsuFnHs2nhsgERxXoMdMLPp6reKZLWX4",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_4b01b2c3_2025-07-05"
+    ],
+    "created_at": "2025-07-05T15:50:12.071384+08:00",
+    "last_seen_at": "2025-07-05T15:50:12.071401+08:00",
+    "updated_at": "2025-07-05T15:50:12.071401+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWQovbXny8D9pjY89LYAeGiBXdLbHAdLWk5zkwXRmkyVje",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [
+      "user_persistent_12D3KooW_193c09b6_2025-07-05"
+    ],
+    "created_at": "2025-07-05T13:10:42.537136+08:00",
+    "last_seen_at": "2025-07-05T13:10:42.537154+08:00",
+    "updated_at": "2025-07-05T13:10:42.537154+08:00"
+  },
+  {
+    "id": "node_user_12D3KooWR7b1eNWoWtzFyEhuYknxNKHc1wwZcvzeuTMxzSEUqB3v",
+    "name": "",
+    "preferred_name": "",
+    "preferences": {},
+    "work_context": "",
+    "personal_info": {},
+    "conversation_ids": [],
+    "created_at": "2025-08-08T00:46:36.601544-04:00",
+    "last_seen_at": "2025-08-08T00:47:10.907358-04:00",
+    "updated_at": "2025-08-08T00:46:36.601544-04:00"
+  }
+]

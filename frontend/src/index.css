@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  color-scheme: dark;
+  color: #ffffff;
+  background-color: #000000;
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Tesla-style variables */
+  --tesla-black: #000000;
+  --tesla-dark-gray: #171717;
+  --tesla-medium-gray: #2a2a2a;
+  --tesla-light-gray: #404040;
+  --tesla-border: #333333;
+  --tesla-white: #ffffff;
+  --tesla-text-gray: #8a8a8a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--tesla-black);
+  color: var(--tesla-white);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--tesla-black);
+}
+
+/* Tesla-style scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--tesla-dark-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--tesla-light-gray);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tesla-text-gray);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--tesla-dark-gray);
+}
+
+/* Tesla-style focus states */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 1px solid var(--tesla-white);
+  outline-offset: 1px;
+}
+
+/* Tesla-style selection */
+::selection {
+  background-color: var(--tesla-white);
+  color: var(--tesla-black);
+}
+
+/* Smooth transitions */
+* {
+  transition: all 0.15s ease;
+}
+
+/* Tesla-style glass effect for cards */
+.tesla-glass {
+  background: rgba(23, 23, 23, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--tesla-border);
+}
+
+/* Tesla-style button base */
+.tesla-button {
+  background: var(--tesla-white);
+  color: var(--tesla-black);
+  border: none;
+  padding: 12px 24px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tesla-button:hover {
+  background: var(--tesla-text-gray);
+  transform: translateY(-1px);
+}
+
+.tesla-button:active {
+  transform: translateY(0);
+}
+
+/* Tesla-style input */
+.tesla-input {
+  background: var(--tesla-dark-gray);
+  border: 1px solid var(--tesla-border);
+  color: var(--tesla-white);
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.tesla-input:focus {
+  border-color: var(--tesla-white);
+  background: var(--tesla-medium-gray);
+}
+
+.tesla-input::placeholder {
+  color: var(--tesla-text-gray);
+}
