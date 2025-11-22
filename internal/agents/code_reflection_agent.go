@@ -553,7 +553,7 @@ func NewCodeReflectionAgent(ragSystem *rag.RAGSystem, modelManager *ai.ModelMana
 	// Initialize senior engineer components
 	cra.fixPlanner = &FixPlanner{
 		agent:         cra,
-		planningModel: "ollama-cogito",
+		planningModel: "ollama-cogito:latest",
 		activePlans:   make(map[string]*FixPlan),
 		planTemplates: make(map[string]*PlanTemplate),
 		testStrategy: &TestStrategy{

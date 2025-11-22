@@ -559,6 +559,39 @@ export class CortexWebSocketService {
       }, 10000);
     });
   }
+
+  // Get conversation history
+  async getConversationHistory(limit: number = 10): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const requestId = `history_${Date.now()}`;
+      
+      // Subscribe to response
+      const unsubscribe = this.subscribe('response', (message: WebSocketMessage) => {
+        if (message.id === requestId) {
+          unsubscribe();
+          if (message.error || (message.data && message.data.error)) {
+            reject(new Error(message.error || message.data.error));
+          } else {
+            resolve(message.data?.messages || []);
+          }
+        }
+      });
+
+      // Send history request
+      this.sendMessage({
+        type: 'request',
+        method: 'getConversationHistory',
+        id: requestId,
+        data: { limit }
+      });
+
+      // Set timeout
+      setTimeout(() => {
+        unsubscribe();
+        reject(new Error('History request timeout'));
+      }, 10000);
+    });
+  }
 }
 
 // Create singleton instance

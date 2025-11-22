@@ -28,18 +28,20 @@ type UserProfile struct {
 
 // UserProfileManager manages persistent user profiles
 type UserProfileManager struct {
-	profiles    map[string]*UserProfile
-	mu          sync.RWMutex
-	persistPath string
-	autoSave    bool
+	profiles     map[string]*UserProfile
+	mu           sync.RWMutex
+	persistPath  string
+	autoSave     bool
+	lastSaveTime time.Time
 }
 
 // NewUserProfileManager creates a new user profile manager
 func NewUserProfileManager(persistPath string) *UserProfileManager {
 	manager := &UserProfileManager{
-		profiles:    make(map[string]*UserProfile),
-		persistPath: persistPath,
-		autoSave:    true,
+		profiles:     make(map[string]*UserProfile),
+		persistPath:  persistPath,
+		autoSave:     true,
+		lastSaveTime: time.Now(),
 	}
 
 	// Try to load existing profiles
@@ -60,7 +62,7 @@ func (upm *UserProfileManager) GetOrCreateUserProfile(userID string) *UserProfil
 	// Check if profile already exists
 	if profile, exists := upm.profiles[userID]; exists {
 		profile.LastSeenAt = time.Now()
-		if upm.autoSave {
+		if upm.autoSave && time.Since(upm.lastSaveTime) > 5*time.Second {
 			go upm.SaveToDisk()
 		}
 		return profile
@@ -82,7 +84,7 @@ func (upm *UserProfileManager) GetOrCreateUserProfile(userID string) *UserProfil
 
 	upm.profiles[userID] = profile
 
-	if upm.autoSave {
+	if upm.autoSave && time.Since(upm.lastSaveTime) > 5*time.Second {
 		go upm.SaveToDisk()
 	}
 
@@ -134,7 +136,7 @@ func (upm *UserProfileManager) UpdateUserProfile(userID string, updates map[stri
 
 	profile.LastSeenAt = time.Now()
 
-	if upm.autoSave {
+	if upm.autoSave && time.Since(upm.lastSaveTime) > 5*time.Second {
 		go upm.SaveToDisk()
 	}
 
@@ -169,7 +171,7 @@ func (upm *UserProfileManager) AddConversationToProfile(userID, conversationID s
 		profile.ConversationIDs = profile.ConversationIDs[len(profile.ConversationIDs)-50:]
 	}
 
-	if upm.autoSave {
+	if upm.autoSave && time.Since(upm.lastSaveTime) > 5*time.Second {
 		go upm.SaveToDisk()
 	}
 
@@ -275,6 +277,7 @@ func (upm *UserProfileManager) SaveToDisk() error {
 		return fmt.Errorf("failed to rename temp file: %w", err)
 	}
 
+	upm.lastSaveTime = time.Now()
 	log.Printf("User profiles saved to %s (%d profiles)", upm.persistPath, len(upm.profiles))
 	return nil
 }

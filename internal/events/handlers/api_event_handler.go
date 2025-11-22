@@ -25,6 +25,7 @@ type APIEventHandler struct {
 	serviceRegistry *services.ServiceRegistryManager
 	p2pNode         *p2p.P2PNode
 	embeddedManager *ai.EmbeddedModelManager
+	contextManager  *rag.ContextManager
 
 	// Event routing
 	eventBus    *events.EventBus
@@ -39,6 +40,7 @@ func NewAPIEventHandler(
 	serviceRegistry *services.ServiceRegistryManager,
 	p2pNode *p2p.P2PNode,
 	embeddedManager *ai.EmbeddedModelManager,
+	contextManager *rag.ContextManager,
 	eventBus *events.EventBus,
 	eventRouter *events.EventRouter,
 ) *APIEventHandler {
@@ -49,6 +51,7 @@ func NewAPIEventHandler(
 		serviceRegistry: serviceRegistry,
 		p2pNode:         p2pNode,
 		embeddedManager: embeddedManager,
+		contextManager:  contextManager,
 		eventBus:        eventBus,
 		eventRouter:     eventRouter,
 	}
@@ -83,6 +86,8 @@ func (h *APIEventHandler) Handle(ctx context.Context, event events.Event) error 
 		return h.handleWalletTransfer(ctx, event)
 	case events.EventTypeGetServices:
 		return h.handleGetServices(ctx, event)
+	case events.EventTypeGetConversationHistory:
+		return h.handleGetConversationHistory(ctx, event)
 	case events.EventTypeServiceRegister:
 		return h.handleServiceRegister(ctx, event)
 	case events.EventTypeServiceDeregister:
@@ -111,6 +116,7 @@ func (h *APIEventHandler) SubscribedEvents() []string {
 		events.EventTypeWalletBalance,
 		events.EventTypeWalletTransfer,
 		events.EventTypeGetServices,
+		events.EventTypeGetConversationHistory,
 		events.EventTypeServiceRegister,
 		events.EventTypeServiceDeregister,
 		events.EventTypeGetNodeInfo,
@@ -511,6 +517,82 @@ func (h *APIEventHandler) handleGetServices(ctx context.Context, event events.Ev
 	return h.sendResponse(ctx, event, events.EventTypeServicesData, response, err)
 }
 
+func (h *APIEventHandler) handleGetConversationHistory(ctx context.Context, event events.Event) error {
+	limit := 10 // Default limit
+	
+	if event.Data != nil {
+		if dataMap, ok := event.Data.(map[string]interface{}); ok {
+			if limitVal, exists := dataMap["limit"]; exists {
+				if limitInt, ok := limitVal.(int); ok {
+					limit = limitInt
+				} else if limitFloat, ok := limitVal.(float64); ok {
+					limit = int(limitFloat)
+				}
+			}
+		}
+	}
+	
+	// Get context manager instance (this should be injected via dependency injection)
+	contextManager := h.contextManager
+	if contextManager == nil {
+		response := map[string]interface{}{
+			"messages":        []interface{}{},
+			"conversation_id": "",
+			"total_events":    0,
+			"error":          "Context manager not available",
+		}
+		return h.sendResponse(ctx, event, "conversation_history.response", response, fmt.Errorf("context manager not available"))
+	}
+	
+	// Get recent conversation history
+	historyEvents, err := contextManager.GetRecentConversationHistory(ctx, limit)
+	if err != nil {
+		response := map[string]interface{}{
+			"messages":        []interface{}{},
+			"conversation_id": "",
+			"total_events":    0,
+			"error":          fmt.Sprintf("Failed to get conversation history: %v", err),
+		}
+		return h.sendResponse(ctx, event, "conversation_history.response", response, err)
+	}
+	
+	// Convert ActivityEvent to chat messages
+	messages := make([]interface{}, 0, len(historyEvents))
+	conversationID := ""
+	
+	for _, activityEvent := range historyEvents {
+		// Extract conversation ID from the first event
+		if conversationID == "" && activityEvent.ConversationID != "" {
+			conversationID = activityEvent.ConversationID
+		}
+		
+		// Convert to chat message format
+		message := map[string]interface{}{
+			"id":        activityEvent.ID,
+			"role":      "user", // Default to user, could be enhanced based on event type
+			"content":   activityEvent.Content,
+			"timestamp": activityEvent.Timestamp,
+		}
+		
+		// Determine role based on event type or content
+		if activityEvent.Type == "ai_response" || activityEvent.Type == "agent_response" {
+			message["role"] = "assistant"
+		} else if activityEvent.Type == "user_query" || activityEvent.Type == "user_message" {
+			message["role"] = "user"
+		}
+		
+		messages = append(messages, message)
+	}
+	
+	response := map[string]interface{}{
+		"messages":        messages,
+		"conversation_id": conversationID,
+		"total_events":    len(historyEvents),
+	}
+	
+	return h.sendResponse(ctx, event, events.EventTypeConversationHistoryData, response, nil)
+}
+
 func (h *APIEventHandler) handleServiceRegister(ctx context.Context, event events.Event) error {
 	response := map[string]interface{}{
 		"success": false,
@@ -593,6 +675,13 @@ func (h *APIEventHandler) sendResponse(ctx context.Context, originalEvent events
 		responseData,
 		originalEvent.CorrelationID,
 	)
+
+	// Copy metadata from original event to preserve connection_id and other context
+	if originalEvent.Metadata != nil {
+		for key, value := range originalEvent.Metadata {
+			responseEvent = responseEvent.WithMetadata(key, value)
+		}
+	}
 
 	return h.eventRouter.RouteResponse(ctx, responseEvent)
 }

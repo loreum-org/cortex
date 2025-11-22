@@ -317,10 +317,10 @@ func (rb *RealtimeBroadcaster) broadcastConsciousnessState() {
 	for {
 		select {
 		case <-ticker.C:
-			if rb.server.RAGSystem != nil && rb.server.RAGSystem.ContextManager != nil {
-				consciousnessRuntime := rb.server.RAGSystem.ContextManager.GetConsciousnessRuntime()
-				if consciousnessRuntime != nil {
-					state := consciousnessRuntime.GetConsciousnessState()
+			if rb.server.RAGSystem != nil {
+				agiSystem := rb.server.RAGSystem.GetAGISystem()
+				if agiSystem != nil {
+					state := agiSystem.GetConsciousnessState()
 
 					message := &WebSocketMessage{
 						Type: WSMsgTypeConsciousness,

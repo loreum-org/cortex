@@ -21,6 +21,7 @@ type VectorStorage struct {
 	documents    map[string]types.VectorDocument
 	index        *types.VectorIndex
 	mu           sync.RWMutex
+	saveMu       sync.Mutex // Prevents concurrent saves
 	persistPath  string // File path for persistence
 	autoSave     bool   // Auto-save on changes
 	lastSaveTime time.Time
@@ -88,8 +89,8 @@ func (v *VectorStorage) AddDocument(doc types.VectorDocument) error {
 		v.index.Size++
 	}
 
-	// Auto-save if enabled
-	if v.autoSave {
+	// Auto-save if enabled (but throttle saves to prevent excessive file operations)
+	if v.autoSave && time.Since(v.lastSaveTime) > 5*time.Second {
 		go func() {
 			if err := v.SaveToDisk(); err != nil {
 				log.Printf("Failed to auto-save vector database: %v", err)
@@ -211,6 +212,10 @@ type PersistentData struct {
 
 // SaveToDisk saves the vector database to disk
 func (v *VectorStorage) SaveToDisk() error {
+	// Prevent concurrent saves
+	v.saveMu.Lock()
+	defer v.saveMu.Unlock()
+	
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 
@@ -239,14 +244,23 @@ func (v *VectorStorage) SaveToDisk() error {
 		return fmt.Errorf("failed to marshal data to JSON: %w", err)
 	}
 
-	// Write to file atomically
+	// Write to file atomically - ensure temp file is in same directory as target
 	tempPath := v.persistPath + ".tmp"
+	
+	// Ensure the temp file directory exists
+	tempDir := filepath.Dir(tempPath)
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return fmt.Errorf("failed to create temp directory %s: %w", tempDir, err)
+	}
+	
 	if err := ioutil.WriteFile(tempPath, jsonData, 0644); err != nil {
 		return fmt.Errorf("failed to write temp file: %w", err)
 	}
 
 	// Atomic rename
 	if err := os.Rename(tempPath, v.persistPath); err != nil {
+		// Clean up temp file on rename failure
+		os.Remove(tempPath)
 		return fmt.Errorf("failed to rename temp file: %w", err)
 	}
 

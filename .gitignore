@@ -5,6 +5,7 @@
 *.so
 *.dylib
 cortex
+cortexd
 
 # Test binary, built with `go test -c`
 *.test
@@ -29,3 +30,11 @@ go.work
 *.njsproj
 *.sln
 *.sw? 
+
+data
+
+build
+.claude
+
+cortex.log
+server.log

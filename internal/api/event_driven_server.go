@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,6 +41,7 @@ type EventDrivenServer struct {
 	serviceRegistry  *services.ServiceRegistryManager
 	agentRegistry    *agents.AgentRegistry
 	embeddedManager  *ai.EmbeddedModelManager
+	standardSolver   *agents.StandardSolverAgent
 
 	// Event handlers
 	apiHandler             *handlers.APIEventHandler
@@ -139,8 +141,15 @@ func NewEventDrivenServer(
 	// Initialize agent registry
 	agentRegistry := agents.NewAgentRegistry()
 
-	// Initialize embedded manager
-	embeddedManager := ai.NewEmbeddedModelManager(ai.DefaultEmbeddedManagerConfig())
+	// Get embedded manager from RAG system (don't create a new one)
+	var embeddedManager *ai.EmbeddedModelManager
+	if ragSystem != nil {
+		embeddedManager = ragSystem.EmbeddedManager
+	}
+	if embeddedManager == nil {
+		// Fallback: create a new one if RAG system doesn't have one
+		embeddedManager = ai.NewEmbeddedModelManager(ai.DefaultEmbeddedManagerConfig())
+	}
 
 	server := &EventDrivenServer{
 		router:           mux.NewRouter(),
@@ -174,6 +183,7 @@ func NewEventDrivenServer(
 		serviceRegistry,
 		p2pNode,
 		embeddedManager,
+		ragSystem.ContextManager,
 		eventBus,
 		eventRouter,
 	)
@@ -370,15 +380,41 @@ func (s *EventDrivenServer) initializeAgentRegistry() {
 		nodeID := s.p2pNode.Host.ID().String()
 
 		solverConfig := &agents.SolverConfig{
-			DefaultModel: "ollama-cogito",
+			DefaultModel: "ollama-cogito:latest",
 		}
 
-		standardSolver := agents.NewStandardSolverAgent(nodeID, solverConfig, s.ragSystem)
+		s.standardSolver = agents.NewStandardSolverAgent(nodeID, solverConfig, s.ragSystem)
 		if s.economicEngine != nil {
-			standardSolver.SetEconomicEngine(s.economicEngine)
+			s.standardSolver.SetEconomicEngine(s.economicEngine)
 		}
 
-		if err := s.agentRegistry.RegisterAgent(standardSolver); err != nil {
+		// Set up callback to update solver agent when embedded manager updates default model
+		if s.embeddedManager != nil {
+			s.embeddedManager.OnDefaultModelReady = func(modelID string) {
+				log.Printf("[EventDrivenServer] Embedded manager default model ready: %s", modelID)
+				if s.standardSolver != nil {
+					s.standardSolver.SetModelManager(s.embeddedManager.ModelManager, modelID)
+				}
+				if s.ragSystem != nil && s.ragSystem.ContextManager != nil {
+					log.Printf("Updating consciousness runtime to use embedded model: %s", modelID)
+					s.ragSystem.ContextManager.SetModelManager(s.embeddedManager.ModelManager, modelID)
+				}
+			}
+
+			// If the embedded manager already has a default model ready, call the callback now
+			models := s.embeddedManager.ModelManager.ListModels()
+			for _, model := range models {
+				if strings.HasPrefix(model.ID, "ollama-cogito") {
+					log.Printf("[EventDrivenServer] Embedded manager already has default model: %s", model.ID)
+					if s.standardSolver != nil {
+						s.standardSolver.SetModelManager(s.embeddedManager.ModelManager, model.ID)
+					}
+					break
+				}
+			}
+		}
+
+		if err := s.agentRegistry.RegisterAgent(s.standardSolver); err != nil {
 			log.Printf("[EventDrivenServer] Warning: Failed to register standard solver agent: %v", err)
 		} else {
 			log.Printf("[EventDrivenServer] Standard solver agent registered successfully")

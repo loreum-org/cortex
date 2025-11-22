@@ -812,11 +812,11 @@ func (s *Server) ragQueryHandler(w http.ResponseWriter, r *http.Request) {
 	var response string
 	var err error
 
-	// Try consciousness processing first if available
-	if s.RAGSystem.ContextManager != nil {
-		consciousnessRuntime := s.RAGSystem.ContextManager.GetConsciousnessRuntime()
-		if consciousnessRuntime != nil {
-			log.Printf("Processing query with consciousness runtime: %s", queryText)
+	// DEPRECATED: Try AGI system processing first if available
+	if s.RAGSystem != nil {
+		agiSystem := s.RAGSystem.GetAGISystem()
+		if agiSystem != nil {
+			log.Printf("Processing query with AGI system: %s", queryText)
 
 			// Create a proper Query object
 			query := &types.Query{
@@ -827,11 +827,11 @@ func (s *Server) ragQueryHandler(w http.ResponseWriter, r *http.Request) {
 				Timestamp: time.Now().Unix(),
 			}
 
-			resp, err := consciousnessRuntime.ProcessQuery(r.Context(), query)
+			resp, err := agiSystem.ProcessQueryWithConsciousness(r.Context(), query)
 			if err == nil && resp != nil {
 				response = resp.Text
 			} else {
-				// Fallback to direct RAG query on consciousness error
+				// Fallback to direct RAG query on AGI error
 				response, err = s.RAGSystem.Query(r.Context(), queryText)
 			}
 		} else {
@@ -2970,13 +2970,14 @@ func (s *Server) consciousnessStateHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	consciousnessRuntime := s.RAGSystem.ContextManager.GetConsciousnessRuntime()
-	if consciousnessRuntime == nil {
-		http.Error(w, "Consciousness runtime not available", http.StatusServiceUnavailable)
+	// DEPRECATED: Return AGI consciousness state instead
+	agiSystem := s.RAGSystem.GetAGISystem()
+	if agiSystem == nil {
+		http.Error(w, "AGI system not available", http.StatusServiceUnavailable)
 		return
 	}
 
-	state := consciousnessRuntime.GetConsciousnessState()
+	state := agiSystem.GetConsciousnessState()
 	json.NewEncoder(w).Encode(state)
 }
 
@@ -2996,13 +2997,18 @@ func (s *Server) consciousnessMetricsHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	consciousnessRuntime := s.RAGSystem.ContextManager.GetConsciousnessRuntime()
-	if consciousnessRuntime == nil {
-		http.Error(w, "Consciousness runtime not available", http.StatusServiceUnavailable)
+	// DEPRECATED: Return basic AGI metrics instead
+	agiSystem := s.RAGSystem.GetAGISystem()
+	if agiSystem == nil {
+		http.Error(w, "AGI system not available", http.StatusServiceUnavailable)
 		return
 	}
 
-	metrics := consciousnessRuntime.GetMetrics()
+	// Return simple metrics for backward compatibility
+	metrics := map[string]interface{}{
+		"deprecated": true,
+		"message":    "Use event-driven server for consciousness metrics",
+	}
 	json.NewEncoder(w).Encode(metrics)
 }
 
@@ -3022,13 +3028,18 @@ func (s *Server) consciousnessMemoryHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	consciousnessRuntime := s.RAGSystem.ContextManager.GetConsciousnessRuntime()
-	if consciousnessRuntime == nil {
-		http.Error(w, "Consciousness runtime not available", http.StatusServiceUnavailable)
+	// DEPRECATED: Return basic working memory info instead
+	agiSystem := s.RAGSystem.GetAGISystem()
+	if agiSystem == nil {
+		http.Error(w, "AGI system not available", http.StatusServiceUnavailable)
 		return
 	}
 
-	workingMemory := consciousnessRuntime.GetWorkingMemory()
+	// Return simple working memory for backward compatibility
+	workingMemory := map[string]interface{}{
+		"deprecated": true,
+		"message":    "Use event-driven server for working memory",
+	}
 	json.NewEncoder(w).Encode(workingMemory)
 }
 
@@ -3830,7 +3841,7 @@ func (s *Server) initializeAgentRegistry() {
 
 	// Create standard solver agent
 	solverConfig := &agents.SolverConfig{
-		DefaultModel: "ollama-cogito",
+		DefaultModel: "ollama-cogito:latest",
 	}
 
 	standardSolver := agents.NewStandardSolverAgent(nodeID, solverConfig, s.RAGSystem)
@@ -3876,60 +3887,25 @@ func (s *Server) initializeAGIAgentIntegration() {
 		return
 	}
 
-	// Create AGI-Agent bridge
-	agiAgentBridge := rag.NewAGIAgentBridge(consciousnessRuntime, agiSystem, contextManager)
+	// DEPRECATED: AGI-Agent bridge functionality is now integrated into AGI system
+	// Bridge is no longer needed as AGI system handles agent integration directly
 
-	// Set bridge in context manager
-	contextManager.SetAGIAgentBridge(agiAgentBridge)
-
-	// Start the bridge
+	// DEPRECATED: AGI-Agent bridge is now integrated directly
 	ctx := context.Background()
-	if err := agiAgentBridge.Start(ctx); err != nil {
-		log.Printf("Warning: Failed to start AGI-Agent bridge: %v", err)
-		return
-	}
 
-	// Enable AGI integration in agent registry
+	// Enable AGI integration in agent registry (still needed)
 	if err := s.AgentRegistry.EnableAGIIntegration(ctx); err != nil {
 		log.Printf("Warning: Failed to enable AGI integration in agent registry: %v", err)
 		return
 	}
 
-	// Connect existing agents to AGI
-	s.connectAgentsToAGI(agiAgentBridge)
-
-	log.Printf("AGI-Agent integration initialized successfully")
+	log.Printf("AGI integration initialized successfully (bridge no longer needed)")
 }
 
-// connectAgentsToAGI connects all registered agents to the AGI system
-func (s *Server) connectAgentsToAGI(bridge *rag.AGIAgentBridge) {
-	agents := s.AgentRegistry.GetAllAgents()
-
-	for _, agentInfo := range agents {
-		agent, err := s.AgentRegistry.GetAgent(agentInfo.ID)
-		if err != nil {
-			log.Printf("Warning: Failed to get agent %s for AGI connection: %v", agentInfo.ID, err)
-			continue
-		}
-
-		// Create AGI connection for the agent
-		agiConnection := bridge.CreateAgentConnection(agentInfo.ID)
-
-		// Set AGI connection in agent (if it supports it)
-		if baseAgent, ok := agent.(interface{ SetAGIConnection(interface{}) error }); ok {
-			if err := baseAgent.SetAGIConnection(agiConnection); err != nil {
-				log.Printf("Warning: Failed to set AGI connection for agent %s: %v", agentInfo.ID, err)
-			} else {
-				log.Printf("Agent %s connected to AGI system", agentInfo.ID)
-			}
-		}
-
-		// Register AGI connection in the connection manager
-		connectionManager := s.AgentRegistry.GetAGIConnectionManager()
-		if err := connectionManager.RegisterAGIConnection(agentInfo.ID, agiConnection); err != nil {
-			log.Printf("Warning: Failed to register AGI connection for agent %s: %v", agentInfo.ID, err)
-		}
-	}
+// connectAgentsToAGI DEPRECATED - AGI integration is now handled directly
+func (s *Server) connectAgentsToAGI_DEPRECATED() {
+	// DEPRECATED: AGI integration is now handled directly by the AGI system
+	log.Printf("DEPRECATED: connectAgentsToAGI is no longer needed")
 }
 
 // initializeCodeReflectionAgent initializes the code reflection agent for self-monitoring
@@ -3953,14 +3929,9 @@ func (s *Server) initializeCodeReflectionAgent() {
 
 	log.Printf("Code Reflection Agent found in registry: %s", agent.GetInfo().Name)
 
-	// Integrate with consciousness runtime if available
-	if s.RAGSystem != nil && s.RAGSystem.ContextManager != nil {
-		if consciousnessRuntime := s.RAGSystem.ContextManager.GetConsciousnessRuntime(); consciousnessRuntime != nil {
-			consciousnessRuntime.SetCodeReflectionAgent(s.AgentRegistry)
-			log.Printf("Code Reflection Agent connected to consciousness runtime")
-		} else {
-			log.Printf("Warning: Consciousness runtime not available")
-		}
+	// DEPRECATED: Code reflection integration is now handled by AGI system
+	if s.RAGSystem != nil {
+		log.Printf("Code Reflection Agent integration handled by unified AGI system")
 	} else {
 		log.Printf("Warning: RAG system or context manager not available")
 	}

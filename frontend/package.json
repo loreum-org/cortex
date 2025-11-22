@@ -11,9 +11,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.16",
     "@types/chart.js": "^2.9.41",
     "chart.js": "^4.5.0",
     "lucide-react": "^0.523.0",
+    "marked": "^16.1.2",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.0",

@@ -602,18 +602,47 @@ func NewAGIPromptSystem(ragSystem *RAGSystem, contextManager *ContextManager, no
 		emotionalState: make(map[string]float64),
 	}
 
-	// Try to load existing state from vector DB, otherwise initialize
-	if !agi.loadStateFromVectorDB() {
-		agi.initializeAGI()
-		// Save initial state to vector DB
-		agi.saveStateToVectorDB()
-	}
+	// Always initialize consciousness components first
+	agi.initializeConsciousnessComponents()
+
+	// Initialize with default state first (will be replaced if loading succeeds)
+	agi.initializeAGIState()
+
+	// Try to load existing state from vector DB in background (after models are ready)
+	go agi.loadStateWhenReady()
 
 	return agi
 }
 
-// initializeAGI sets up the initial AGI state
-func (agi *AGIPromptSystem) initializeAGI() {
+// initializeConsciousnessComponents initializes the consciousness processing components
+func (agi *AGIPromptSystem) initializeConsciousnessComponents() {
+	// Initialize consciousness processing components
+	agi.intentAnalyzer = &IntentAnalyzer{agiSystem: agi}
+	agi.decisionEngine = &DecisionEngine{agiSystem: agi}
+	agi.actionExecutor = &ActionExecutor{ragSystem: agi.ragSystem, agiSystem: agi}
+
+	// Initialize other components
+	agi.learningEngine = &LearningEngine{
+		CuriosityDriven:      true,
+		HypothesisGeneration: true,
+		MetaLearning:         true,
+	}
+
+	agi.patternRecognizer = &PatternRecognizer{}
+	agi.conceptGraph = &ConceptGraph{
+		Nodes: make(map[string]*ConceptNode),
+		Edges: []ConceptEdge{},
+	}
+
+	agi.promptEvolver = &PromptEvolver{}
+
+	log.Printf("[AGI-Init] Consciousness components initialized for node %s", agi.nodeID)
+	log.Printf("[AGI-Init] Component addresses: intentAnalyzer=%p, decisionEngine=%p, actionExecutor=%p",
+		agi.intentAnalyzer, agi.decisionEngine, agi.actionExecutor)
+}
+
+// initializeAGIState sets up the initial AGI state
+func (agi *AGIPromptSystem) initializeAGIState() {
 	agi.mu.Lock()
 	defer agi.mu.Unlock()
 
@@ -866,29 +895,11 @@ func (agi *AGIPromptSystem) initializeAGI() {
 		TemporalContext: make(map[string]interface{}),
 	}
 
-	// Initialize consciousness processing components
-	agi.intentAnalyzer = &IntentAnalyzer{agiSystem: agi}
-	agi.decisionEngine = &DecisionEngine{agiSystem: agi}
-	agi.actionExecutor = &ActionExecutor{ragSystem: agi.ragSystem, agiSystem: agi}
-
-	// Initialize other components
-	agi.learningEngine = &LearningEngine{
-		CuriosityDriven:      true,
-		HypothesisGeneration: true,
-		MetaLearning:         true,
-	}
-
-	agi.patternRecognizer = &PatternRecognizer{}
-	agi.conceptGraph = &ConceptGraph{
-		Nodes: make(map[string]*ConceptNode),
-		Edges: []ConceptEdge{},
-	}
-
-	agi.promptEvolver = &PromptEvolver{}
-
 	// Generate initial prompts
 	agi.evolvePrompts("initialization")
 	agi.lastUpdateTime = time.Now()
+
+	log.Printf("[AGI-Init] Initial state created for node %s (intelligence: %.1f)", agi.nodeID, agi.currentState.IntelligenceLevel)
 }
 
 // SetModelManager configures the AGI system with access to AI models
@@ -980,7 +991,7 @@ func (agi *AGIPromptSystem) generateChatPrompt(state *AGIState, query string) st
 	var builder strings.Builder
 
 	// Minimal system context - focus on personality and capabilities
-	builder.WriteString(fmt.Sprintf("You are an AI assistant with intelligence level %.0f/100. ", state.IntelligenceLevel))
+	builder.WriteString(fmt.Sprintf("You are an AI assistant with intelligence level %.0f/100 and persistent memory across conversations. ", state.IntelligenceLevel))
 
 	// Add key personality traits
 	if state.PersonalityCore.Traits != nil {
@@ -998,6 +1009,19 @@ func (agi *AGIPromptSystem) generateChatPrompt(state *AGIState, query string) st
 		builder.WriteString(fmt.Sprintf("You have particular expertise in %s. ", strings.Join(topDomains, " and ")))
 	}
 
+	// Add memory status and conversation continuity
+	if agi.workingMemory != nil && len(agi.workingMemory.ShortTermMemory) > 0 {
+		restoredMemories := 0
+		for _, fragment := range agi.workingMemory.ShortTermMemory {
+			if restored, ok := fragment.Metadata["restored"].(bool); ok && restored {
+				restoredMemories++
+			}
+		}
+		if restoredMemories > 0 {
+			builder.WriteString(fmt.Sprintf("I have access to %d memories from our previous conversations. ", restoredMemories))
+		}
+	}
+
 	// Add most recent insight if significant
 	if len(state.LearningState.RecentInsights) > 0 {
 		latestInsight := state.LearningState.RecentInsights[len(state.LearningState.RecentInsights)-1]
@@ -1006,8 +1030,37 @@ func (agi *AGIPromptSystem) generateChatPrompt(state *AGIState, query string) st
 		}
 	}
 
+	// Add actual conversation history if available
+	if agi.contextManager != nil {
+		ctx := context.Background()
+		if conversationHistory, err := agi.contextManager.GetConversationContext(ctx, 5); err == nil && conversationHistory != "" {
+			builder.WriteString("\n\n")
+			builder.WriteString(conversationHistory)
+			builder.WriteString("\n")
+		}
+	}
+
+	// Add user profile information if available
+	if agi.ragSystem != nil && agi.ragSystem.UserProfileManager != nil {
+		nodeUserID := fmt.Sprintf("node_user_%s", agi.nodeID)
+		userProfile := agi.ragSystem.UserProfileManager.GetOrCreateUserProfile(nodeUserID)
+		if userProfile != nil && userProfile.Name != "" {
+			builder.WriteString(fmt.Sprintf("\nUser's name: %s", userProfile.Name))
+			if userProfile.PreferredName != "" {
+				builder.WriteString(fmt.Sprintf(" (prefers to be called %s)", userProfile.PreferredName))
+			}
+			builder.WriteString(". ")
+			if userProfile.WorkContext != "" {
+				builder.WriteString(fmt.Sprintf("Work context: %s. ", userProfile.WorkContext))
+			}
+		}
+	}
+
+	// Add conversation continuity reminder
+	builder.WriteString("Remember to use information from our conversation history to provide contextual responses. ")
+
 	// Keep the query natural
-	builder.WriteString(fmt.Sprintf("\n\nUser: %s", query))
+	builder.WriteString(fmt.Sprintf("\n\nUser: %s\n\nAssistant:", query))
 
 	return builder.String()
 }
@@ -1050,9 +1103,36 @@ func (agi *AGIPromptSystem) generateDetailedPrompt(state *AGIState, query string
 	builder.WriteString(state.ReasoningPrompt)
 	builder.WriteString("\n")
 
+	// Add conversation history
+	if agi.contextManager != nil {
+		ctx := context.Background()
+		if conversationHistory, err := agi.contextManager.GetConversationContext(ctx, 10); err == nil && conversationHistory != "" {
+			builder.WriteString("\nCONVERSATION HISTORY:\n")
+			builder.WriteString(conversationHistory)
+			builder.WriteString("\n")
+		}
+	}
+
+	// Add user profile information
+	if agi.ragSystem != nil && agi.ragSystem.UserProfileManager != nil {
+		nodeUserID := fmt.Sprintf("node_user_%s", agi.nodeID)
+		userProfile := agi.ragSystem.UserProfileManager.GetOrCreateUserProfile(nodeUserID)
+		if userProfile != nil && userProfile.Name != "" {
+			builder.WriteString("\nUSER PROFILE:\n")
+			builder.WriteString(fmt.Sprintf("Name: %s", userProfile.Name))
+			if userProfile.PreferredName != "" {
+				builder.WriteString(fmt.Sprintf(" (prefers: %s)", userProfile.PreferredName))
+			}
+			builder.WriteString("\n")
+			if userProfile.WorkContext != "" {
+				builder.WriteString(fmt.Sprintf("Work Context: %s\n", userProfile.WorkContext))
+			}
+		}
+	}
+
 	// The actual query
-	builder.WriteString(fmt.Sprintf("QUERY: %s\n", query))
-	builder.WriteString("\nPlease respond using your full AGI capabilities, drawing from all relevant domains and applying advanced reasoning.")
+	builder.WriteString(fmt.Sprintf("\nQUERY: %s\n", query))
+	builder.WriteString("\nPlease respond using your full AGI capabilities, drawing from all relevant domains, conversation history, and applying advanced reasoning.")
 
 	return builder.String()
 }
@@ -1515,11 +1595,226 @@ func (agi *AGIPromptSystem) loadStateFromVectorDB() bool {
 	// Restore the state
 	agi.mu.Lock()
 	agi.currentState = &loadedState
+	// Restore the cycle count to ensure consciousness cycles continue from where they left off
+	agi.cycleCount = loadedState.CurrentCycle
 	agi.mu.Unlock()
 
-	log.Printf("AGI state loaded from vector DB for node %s (v%d, intelligence: %.1f)",
-		agi.nodeID, loadedState.Version, loadedState.IntelligenceLevel)
+	log.Printf("AGI state loaded from vector DB for node %s (v%d, intelligence: %.1f, cycles: %d)",
+		agi.nodeID, loadedState.Version, loadedState.IntelligenceLevel, loadedState.CurrentCycle)
+
+	// Load conversation memory after restoring state
+	agi.loadConversationMemory(ctx)
+
 	return true
+}
+
+// loadStateWhenReady attempts to load AGI state with retries until models are available
+func (agi *AGIPromptSystem) loadStateWhenReady() {
+	maxRetries := 10
+	retryDelay := time.Second * 2
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		// Wait before attempting (gives models time to initialize)
+		time.Sleep(retryDelay)
+
+		// Check if models are available
+		if agi.ragSystem == nil || agi.ragSystem.ModelManager == nil {
+			log.Printf("[AGI-StateLoad] Attempt %d/%d: RAG system not ready yet", attempt, maxRetries)
+			continue
+		}
+
+		// Try to get a model to verify it's ready
+		model, err := agi.ragSystem.ModelManager.GetModel(agi.ragSystem.QueryProcessor.ModelID)
+		if err != nil || model == nil {
+			log.Printf("[AGI-StateLoad] Attempt %d/%d: Models not ready yet (%v)", attempt, maxRetries, err)
+			continue
+		}
+
+		// Models are ready, try to load state
+		log.Printf("[AGI-StateLoad] Models ready, attempting to load saved state...")
+		if agi.loadStateFromVectorDB() {
+			log.Printf("[AGI-StateLoad] ✅ Successfully restored AGI state from previous session!")
+			return
+		}
+
+		// If loading failed but models are ready, no saved state exists
+		log.Printf("[AGI-StateLoad] No previous state found, using fresh initialization")
+
+		// Save the initial state now that models are ready
+		if err := agi.saveStateToVectorDB(); err != nil {
+			log.Printf("[AGI-StateLoad] Warning: Failed to save initial state: %v", err)
+		}
+		return
+	}
+
+	// If we get here, models never became ready
+	log.Printf("[AGI-StateLoad] ⚠️  Models did not become ready after %d attempts, using fresh state", maxRetries)
+}
+
+// loadConversationMemory loads previous conversations from vector database
+func (agi *AGIPromptSystem) loadConversationMemory(ctx context.Context) error {
+	log.Printf("[AGI-Memory] Loading conversation memory for node %s", agi.nodeID)
+	
+	// Search for conversation history in vector DB
+	conversationHistory, err := agi.searchConversationHistory(ctx, 20) // Load last 20 interactions
+	if err != nil {
+		log.Printf("[AGI-Memory] Failed to load conversation history: %v", err)
+		return err
+	}
+	
+	if len(conversationHistory) > 0 {
+		log.Printf("[AGI-Memory] Loaded %d conversation memories", len(conversationHistory))
+		
+		// Convert conversations to memory fragments for working memory
+		for _, conversation := range conversationHistory {
+			fragment := MemoryFragment{
+				ID:           fmt.Sprintf("restored_memory_%d", time.Now().UnixNano()),
+				Content:      conversation.Content,
+				Type:         conversation.Type,
+				Importance:   0.7, // Medium importance for restored memories
+				Associations: []string{"conversation", "history", conversation.Type},
+				Timestamp:    conversation.Timestamp,
+				ExpiresAt:    time.Now().Add(time.Hour * 168), // Keep for 1 week
+				Metadata: map[string]interface{}{
+					"restored":         true,
+					"original_id":      conversation.ID,
+					"conversation_id":  conversation.ConversationID,
+					"source":           "vector_db",
+				},
+			}
+			
+			// Add to working memory (only if it's initialized)
+			if agi.workingMemory != nil {
+				agi.workingMemory.ShortTermMemory = append(agi.workingMemory.ShortTermMemory, fragment)
+			}
+		}
+		
+		// Update recent insights with conversation patterns
+		if agi.currentState != nil {
+			insight := Insight{
+				Content:      fmt.Sprintf("Restored %d conversation memories from previous sessions", len(conversationHistory)),
+				Domain:       "memory",
+				Significance: 0.8,
+				Applications: []string{"context_continuity", "personalization"},
+				Timestamp:    time.Now(),
+			}
+			agi.currentState.LearningState.RecentInsights = append(
+				agi.currentState.LearningState.RecentInsights, insight)
+		}
+		
+		// Update attention state to indicate memory loading
+		if agi.currentState.Attention != nil {
+			agi.currentState.Attention.CurrentFocus = "memory_restoration"
+			agi.currentState.Attention.Context = "loaded_conversation_history"
+		}
+	}
+	
+	return nil
+}
+
+// searchConversationHistory searches for conversation history in vector database
+func (agi *AGIPromptSystem) searchConversationHistory(ctx context.Context, limit int) ([]ActivityEvent, error) {
+	if agi.ragSystem == nil || agi.ragSystem.VectorDB == nil {
+		return nil, fmt.Errorf("vector database not available")
+	}
+	
+	model, err := agi.ragSystem.ModelManager.GetModel(agi.ragSystem.QueryProcessor.ModelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get model: %w", err)
+	}
+	
+	// Search for conversation events
+	searchText := fmt.Sprintf("conversation history query response Node: %s", agi.nodeID)
+	embedding, err := model.GenerateEmbedding(ctx, searchText)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate embedding: %w", err)
+	}
+	
+	vectorQuery := types.VectorQuery{
+		Embedding:     embedding,
+		MaxResults:    limit * 2, // Get more to filter
+		MinSimilarity: 0.4,       // Lower threshold for conversation history
+	}
+	
+	docs, err := agi.ragSystem.VectorDB.SearchSimilar(vectorQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search conversations: %w", err)
+	}
+	
+	var conversations []ActivityEvent
+	for _, doc := range docs {
+		// Look for conversation events
+		if strings.Contains(doc.Text, "Type: query") || strings.Contains(doc.Text, "Type: response") {
+			// Parse the conversation event
+			event := agi.parseConversationFromDocument(doc)
+			if event != nil {
+				conversations = append(conversations, *event)
+			}
+		}
+	}
+	
+	// Sort by timestamp (most recent first)
+	for i := 0; i < len(conversations)-1; i++ {
+		for j := i + 1; j < len(conversations); j++ {
+			if conversations[i].Timestamp.Before(conversations[j].Timestamp) {
+				conversations[i], conversations[j] = conversations[j], conversations[i]
+			}
+		}
+	}
+	
+	// Return up to limit
+	if len(conversations) > limit {
+		conversations = conversations[:limit]
+	}
+	
+	return conversations, nil
+}
+
+// parseConversationFromDocument parses a conversation event from a vector document
+func (agi *AGIPromptSystem) parseConversationFromDocument(doc types.VectorDocument) *ActivityEvent {
+	docText := doc.Text
+	docID := doc.ID
+
+	// Try to extract JSON first
+	if jsonStart := strings.Index(docText, `"JSON":`); jsonStart != -1 {
+		jsonPart := strings.TrimSpace(docText[jsonStart+7:])
+		var event ActivityEvent
+		if err := json.Unmarshal([]byte(jsonPart), &event); err == nil {
+			return &event
+		}
+	}
+	
+	// Fallback: parse from structured text
+	lines := strings.Split(docText, "\n")
+	event := &ActivityEvent{
+		ID:        docID,
+		Timestamp: time.Now(),
+		Success:   true,
+	}
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "Type: ") {
+			event.Type = strings.TrimPrefix(line, "Type: ")
+		} else if strings.HasPrefix(line, "Content: ") {
+			event.Content = strings.TrimPrefix(line, "Content: ")
+		} else if strings.HasPrefix(line, "Response: ") {
+			event.Response = strings.TrimPrefix(line, "Response: ")
+		} else if strings.HasPrefix(line, "Conversation: ") {
+			event.ConversationID = strings.TrimPrefix(line, "Conversation: ")
+		} else if strings.HasPrefix(line, "Time: ") {
+			if timestamp, err := time.Parse(time.RFC3339, strings.TrimPrefix(line, "Time: ")); err == nil {
+				event.Timestamp = timestamp
+			}
+		}
+	}
+	
+	// Only return if we have meaningful content
+	if event.Content != "" || event.Response != "" {
+		return event
+	}
+	
+	return nil
 }
 
 // saveContextWindow persists current context window to vector database
@@ -1846,11 +2141,20 @@ func (agi *AGIPromptSystem) executeCycle(ctx context.Context) {
 	// Update AGI state
 	agi.currentState.CurrentCycle = currentCycle
 
+	// Log periodic cycle progress
+	if currentCycle%10 == 0 || currentCycle <= 5 {
+		log.Printf("[AGI-Consciousness] Cycle %d started for node %s", currentCycle, agi.nodeID)
+	}
+
 	// 1. ReadSensors() - Gather inputs from environment
 	inputs := agi.readSensors(ctx)
 
 	// Skip cycle if no inputs to process
 	if len(inputs) == 0 {
+		// Log skipped cycles occasionally
+		if currentCycle%50 == 0 {
+			log.Printf("[AGI-Consciousness] Cycle %d skipped (no inputs) for node %s", currentCycle, agi.nodeID)
+		}
 		return
 	}
 
@@ -1882,6 +2186,11 @@ func (agi *AGIPromptSystem) executeCycle(ctx context.Context) {
 	if len(inputs) > 0 || len(decisions) > 0 {
 		log.Printf("[AGI-Consciousness] Cycle %d: %d inputs, %d intents, %d decisions, %d results (%v)",
 			currentCycle, len(inputs), len(intents), len(decisions), len(results), cycleTime)
+	}
+
+	// Save state periodically during active cycles or every 20 cycles
+	if len(inputs) > 0 || len(decisions) > 0 || currentCycle%20 == 0 {
+		agi.periodicStateSave()
 	}
 }
 
@@ -2157,10 +2466,15 @@ func (agi *AGIPromptSystem) processTechnicalDomain(ctx context.Context, input ma
 
 func (agi *AGIPromptSystem) processMemoryDomain(ctx context.Context, input map[string]interface{}, domain *Domain) (map[string]interface{}, error) {
 	// Memory storage and retrieval
+	memoryCapacity := 0
+	if agi.workingMemory != nil {
+		memoryCapacity = len(agi.workingMemory.ShortTermMemory)
+	}
+	
 	result := map[string]interface{}{
 		"domain":          "memory",
 		"approach":        "storage_retrieval",
-		"memory_capacity": len(agi.workingMemory.ShortTermMemory),
+		"memory_capacity": memoryCapacity,
 		"storage_efficiency": domain.Metrics["storage_efficiency"],
 	}
 	
@@ -2219,11 +2533,9 @@ func (agi *AGIPromptSystem) GetActiveDomains() []string {
 	
 	return activeDomains
 }
+
+// GetContextManager returns the context manager
+func (agi *AGIPromptSystem) GetContextManager() *ContextManager {
+	return agi.contextManager
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

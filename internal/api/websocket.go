@@ -16,6 +16,66 @@ import (
 	"github.com/loreum-org/cortex/pkg/types"
 )
 
+// Helper functions for map access
+func getStringValue(m map[string]interface{}, key string) string {
+	if val, ok := m[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+func getIntValue(m map[string]interface{}, key string) int {
+	if val, ok := m[key]; ok {
+		if i, ok := val.(int); ok {
+			return i
+		}
+		if f, ok := val.(float64); ok {
+			return int(f)
+		}
+	}
+	return 0
+}
+
+func getFloatValue(m map[string]interface{}, key string) float64 {
+	if val, ok := m[key]; ok {
+		if f, ok := val.(float64); ok {
+			return f
+		}
+		if i, ok := val.(int); ok {
+			return float64(i)
+		}
+	}
+	return 0.0
+}
+
+func getArrayValue(m map[string]interface{}, key string) []interface{} {
+	if val, ok := m[key]; ok {
+		if arr, ok := val.([]interface{}); ok {
+			return arr
+		}
+	}
+	return nil
+}
+
+func getNestedValue(m map[string]interface{}, keys ...string) interface{} {
+	current := m
+	for i, key := range keys {
+		if i == len(keys)-1 {
+			// Last key, return the value
+			return current[key]
+		}
+		// Navigate to nested map
+		if nested, ok := current[key].(map[string]interface{}); ok {
+			current = nested
+		} else {
+			return nil
+		}
+	}
+	return nil
+}
+
 // WebSocketManager manages WebSocket connections and real-time communication
 type WebSocketManager struct {
 	// Connection management
@@ -713,8 +773,8 @@ func (c *WebSocketConnection) processQueryStreamingWithContext(ctx context.Conte
 			if err == nil && resp != nil {
 				log.Printf("Consciousness processed query successfully, response length: %d", len(resp.Text))
 				
-				// Get consciousness state for metadata
-				consciousnessState := consciousnessRuntime.GetConsciousnessState()
+				// Get AGI consciousness state for metadata
+				consciousnessState := agiSystem.GetConsciousnessState()
 
 				// Store response in conversation memory
 				c.storeConversationEvent("assistant_response", resp.Text, queryID)
@@ -727,10 +787,10 @@ func (c *WebSocketConnection) processQueryStreamingWithContext(ctx context.Conte
 						"metadata": map[string]interface{}{
 							"source":              "consciousness_runtime",
 							"processing_type":     "consciousness_processed",
-							"consciousness_cycle": consciousnessState.CurrentCycle,
-							"decision_state":      consciousnessState.DecisionState,
-							"attention_focus":     consciousnessState.Attention.CurrentFocus,
-							"energy_level":        consciousnessState.EnergyLevel,
+							"consciousness_cycle": consciousnessState["current_cycle"],
+							"decision_state":      consciousnessState["decision_state"],
+							"attention_focus":     getNestedValue(consciousnessState, "attention", "current_focus"),
+							"energy_level":        consciousnessState["energy_level"],
 							"response_metadata":   resp.Metadata,
 							"conversation_id":     c.ConversationID,
 							"query_count":         c.QueryCount,
@@ -1295,13 +1355,19 @@ func (c *WebSocketConnection) sendConsciousnessUpdate(message string, data map[s
 	}()
 }
 
-// enhanceQueryWithConsciousness enhances a query with consciousness context
-func (c *WebSocketConnection) enhanceQueryWithConsciousness(query string, state *rag.ConsciousnessState) string {
+// enhanceQueryWithConsciousness enhances a query with AGI consciousness context
+func (c *WebSocketConnection) enhanceQueryWithConsciousness(query string, state map[string]interface{}) string {
 	if state == nil {
 		return query
 	}
 
 	// Build enhanced query with consciousness context
+	currentCycle := getIntValue(state, "current_cycle")
+	energyLevel := getFloatValue(state, "energy_level")
+	decisionState := getStringValue(state, "decision_state")
+	attentionFocus := getNestedValue(state, "attention", "current_focus")
+	activeThoughts := getArrayValue(state, "active_thoughts")
+	
 	enhanced := fmt.Sprintf(`[Consciousness Context - Cycle: %d, Focus: %s, Energy: %.2f, State: %s]
 
 Current attention: %s
@@ -1312,14 +1378,14 @@ Decision state: %s
 User query: %s
 
 Please respond with awareness of the current consciousness state and provide a thoughtful, contextual response.`,
-		state.CurrentCycle,
-		state.Attention.CurrentFocus,
-		state.EnergyLevel,
-		state.DecisionState,
-		state.Attention.CurrentFocus,
-		c.extractThoughtContents(state.ActiveThoughts),
-		state.EnergyLevel,
-		state.DecisionState,
+		currentCycle,
+		attentionFocus,
+		energyLevel,
+		decisionState,
+		attentionFocus,
+		c.extractThoughtContents(activeThoughts),
+		energyLevel,
+		decisionState,
 		query)
 
 	return enhanced
@@ -1360,14 +1426,32 @@ Please respond considering the above context and provide a coherent, contextual 
 }
 
 // extractThoughtContents extracts content from thoughts for display
-func (c *WebSocketConnection) extractThoughtContents(thoughts []rag.Thought) []string {
+func (c *WebSocketConnection) extractThoughtContents(thoughts []interface{}) []string {
 	if len(thoughts) == 0 {
 		return []string{"No active thoughts"}
 	}
 
-	contents := make([]string, len(thoughts))
-	for i, thought := range thoughts {
-		contents[i] = thought.Content
+	contents := make([]string, 0, len(thoughts))
+	for _, thought := range thoughts {
+		// Handle different thought formats
+		switch t := thought.(type) {
+		case map[string]interface{}:
+			if content, ok := t["content"].(string); ok {
+				contents = append(contents, content)
+			} else if text, ok := t["text"].(string); ok {
+				contents = append(contents, text)
+			} else {
+				contents = append(contents, fmt.Sprintf("%v", t))
+			}
+		case string:
+			contents = append(contents, t)
+		default:
+			contents = append(contents, fmt.Sprintf("%v", t))
+		}
+	}
+	
+	if len(contents) == 0 {
+		return []string{"No active thoughts"}
 	}
 	return contents
 }
@@ -1830,10 +1914,10 @@ func (c *WebSocketConnection) streamSystemEvents() {
 
 // Helper methods for consciousness analysis
 
-func (c *WebSocketConnection) extractGoalDescriptions(goals []rag.ConsciousGoal) []string {
+func (c *WebSocketConnection) extractGoalDescriptions(goals []rag.Goal) []string {
 	descriptions := make([]string, len(goals))
 	for i, goal := range goals {
-		descriptions[i] = fmt.Sprintf("%s (%.1f%% complete, priority: %.2f)",
+		descriptions[i] = fmt.Sprintf("%s (%.1f%% complete, priority: %d)",
 			goal.Description, goal.Progress*100, goal.Priority)
 	}
 	return descriptions
@@ -2078,6 +2162,8 @@ func (c *WebSocketConnection) routeRequestByMethod(msg *WebSocketMessage, method
 		c.handleGetCodeQuality(msg)
 	case "getCodeMetrics":
 		c.handleGetCodeMetrics(msg)
+	case "getConversationHistory":
+		c.handleGetConversationHistory(msg)
 	default:
 		c.sendError(msg.ID, fmt.Sprintf("Unknown request method: %s", method))
 	}

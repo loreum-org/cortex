@@ -114,6 +114,26 @@ func (r *RAGSystem) Shutdown() error {
 
 	var shutdownErr error
 
+	// Save AGI state before shutdown
+	if r.ContextManager != nil && r.ContextManager.agiSystem != nil {
+		log.Printf("[RAGSystem] Saving AGI state before shutdown...")
+		if err := r.ContextManager.agiSystem.saveStateToVectorDB(); err != nil {
+			log.Printf("[RAGSystem] Warning: Failed to save AGI state on shutdown: %v", err)
+		} else {
+			log.Printf("[RAGSystem] ✅ AGI state saved successfully on shutdown")
+		}
+	}
+
+	// Save vector database before shutdown
+	if r.VectorDB != nil {
+		log.Printf("[RAGSystem] Saving vector database before shutdown...")
+		if err := r.VectorDB.SaveToDisk(); err != nil {
+			log.Printf("[RAGSystem] Warning: Failed to save vector DB on shutdown: %v", err)
+		} else {
+			log.Printf("[RAGSystem] ✅ Vector database saved successfully on shutdown")
+		}
+	}
+
 	// Stop embedded Ollama if running
 	if r.EmbeddedManager != nil {
 		if err := r.EmbeddedManager.Stop(); err != nil {
@@ -159,7 +179,7 @@ func tryRegisterOllamaModels(manager *ai.ModelManager) error {
 	config := ai.DefaultOllamaConfig()
 
 	// Create a test model to check connectivity
-	testModel := ai.NewOllamaModel("cogito", config)
+	testModel := ai.NewOllamaModel("cogito:latest", config)
 
 	// Check if Ollama is healthy
 	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
@@ -170,7 +190,7 @@ func tryRegisterOllamaModels(manager *ai.ModelManager) error {
 	}
 
 	// Register default models - use only available models
-	models := []string{"cogito", "llama3.2:3b", "llama3.2:1b", "nomic-embed-text:latest"}
+	models := []string{"cogito:latest", "llama3.2:3b", "llama3.2:1b", "nomic-embed-text:latest"}
 	for _, modelName := range models {
 		model := ai.NewOllamaModel(modelName, config)
 		manager.RegisterModel(model)

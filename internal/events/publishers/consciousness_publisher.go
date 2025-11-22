@@ -240,12 +240,22 @@ func (cp *ConsciousnessPublisher) getAGINodeID(agiState *rag.AGIState) string {
 
 // PublishConsciousnessEvent allows manual publishing of consciousness events
 func (cp *ConsciousnessPublisher) PublishConsciousnessEvent(eventType, description string, data map[string]interface{}) error {
+	// Get node ID from AGI system or use default
+	nodeID := "unknown"
+	if cp.ragSystem != nil {
+		if agiSystem := cp.ragSystem.GetAGISystem(); agiSystem != nil {
+			if contextManager := agiSystem.GetContextManager(); contextManager != nil {
+				nodeID = contextManager.GetNodeID()
+			}
+		}
+	}
+	
 	consciousnessEvent := events.NewEvent(
 		eventType,
 		"consciousness_publisher",
 		events.ConsciousnessData{
 			State: data,
-			NodeID: cp.getNodeID(),
+			NodeID: nodeID,
 		},
 	).WithMetadata("description", description)
 	

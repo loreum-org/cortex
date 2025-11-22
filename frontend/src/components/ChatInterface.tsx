@@ -1,17 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Database, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { marked } from 'marked';
 import { cortexWebSocket, type ConnectionStatus } from '../services/websocket';
 import type { ChatMessage } from '../services/api';
 
 export function ChatInterface() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      content: 'Hello! I\'m your Loreum Network assistant. I can help you query the network, search through documents, and answer questions about the blockchain data. I have access to advanced consciousness, memory, and agent systems. How can I assist you today?',
-      role: 'assistant',
-      timestamp: new Date().toISOString(),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [useRAG, setUseRAG] = useState(true);
@@ -20,6 +14,8 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   
   // Enhanced state for consciousness and metadata
   const [consciousnessState, setConsciousnessState] = useState<any>(null);
@@ -47,9 +43,10 @@ export function ChatInterface() {
     const unsubscribeStatus = cortexWebSocket.onConnectionStatusChange((status) => {
       setConnectionStatus(status);
       
-      // Subscribe to consciousness updates when connected
+      // Subscribe to consciousness updates and load history when connected
       if (status === 'connected' && !isConsciousnessSubscribed) {
         subscribeToConsciousness();
+        loadConversationHistory();
       }
     });
 
@@ -58,6 +55,7 @@ export function ChatInterface() {
       cortexWebSocket.connect().catch(console.error);
     } else if (cortexWebSocket.getConnectionStatus() === 'connected' && !isConsciousnessSubscribed) {
       subscribeToConsciousness();
+      loadConversationHistory();
     }
 
     // Auto-focus input on mount
@@ -68,7 +66,7 @@ export function ChatInterface() {
     return () => {
       unsubscribeStatus();
     };
-  }, [isConsciousnessSubscribed]);
+  }, [isConsciousnessSubscribed, historyLoaded]);
 
   const subscribeToConsciousness = async () => {
     try {
@@ -84,6 +82,43 @@ export function ChatInterface() {
       setIsConsciousnessSubscribed(true);
     } catch (error) {
       console.error('Failed to subscribe to consciousness updates:', error);
+    }
+  };
+
+  const loadConversationHistory = async () => {
+    if (historyLoaded || isLoadingHistory) return;
+    
+    setIsLoadingHistory(true);
+    try {
+      console.log('🔄 Loading conversation history...');
+      const historyMessages = await cortexWebSocket.getConversationHistory(10);
+      
+      if (historyMessages && historyMessages.length > 0) {
+        console.log(`📚 Loaded ${historyMessages.length} messages from history`);
+        setMessages(historyMessages);
+      } else {
+        console.log('📚 No conversation history found, showing welcome message');
+        // Only show welcome message if no history exists
+        setMessages([{
+          id: '1',
+          content: 'Hello! I\'m your Loreum Network assistant. I can help you query the network, search through documents, and answer questions about the blockchain data. I have access to advanced consciousness, memory, and agent systems. How can I assist you today?',
+          role: 'assistant',
+          timestamp: new Date().toISOString(),
+        }]);
+      }
+      setHistoryLoaded(true);
+    } catch (error) {
+      console.error('❌ Failed to load conversation history:', error);
+      // Show welcome message on error
+      setMessages([{
+        id: '1',
+        content: 'Hello! I\'m your Loreum Network assistant. I can help you query the network, search through documents, and answer questions about the blockchain data. I have access to advanced consciousness, memory, and agent systems. How can I assist you today?',
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+      }]);
+      setHistoryLoaded(true);
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
 
@@ -178,62 +213,22 @@ export function ChatInterface() {
 
   return (
     <div className="max-w-5xl mx-auto h-screen flex flex-col bg-tesla-black">
-      {/* Header */}
-      <div className="bg-tesla-dark-gray border-b border-tesla-border p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Bot className="h-6 w-6 text-tesla-white" />
-            <h1 className="text-xl font-medium text-tesla-white uppercase tracking-wide">LOREUM NETWORK CHAT</h1>
-            <span className="text-xs text-tesla-text-gray bg-tesla-medium-gray px-3 py-1 uppercase tracking-wider border border-tesla-border">
-              AGI + CONSCIOUSNESS ACTIVE
-            </span>
-            {consciousnessState && (
-              <div className="text-xs text-green-400 bg-green-900/20 px-3 py-1 uppercase tracking-wider border border-green-500/30">
-                CONSCIOUSNESS CYCLE {consciousnessState.consciousness_state?.cycle_count || 0}
-              </div>
-            )}
-            <div className={`flex items-center gap-2 text-xs px-3 py-1 uppercase tracking-wider border ${
-              connectionStatus === 'connected' 
-                ? 'text-green-400 bg-green-900/20 border-green-500/30' 
-                : connectionStatus === 'connecting'
-                ? 'text-yellow-400 bg-yellow-900/20 border-yellow-500/30'
-                : 'text-red-400 bg-red-900/20 border-red-500/30'
-            }`}>
-              {connectionStatus === 'connected' ? (
-                <>
-                  <Wifi className="h-3 w-3" />
-                  WEBSOCKET CONNECTED
-                </>
-              ) : connectionStatus === 'connecting' ? (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  CONNECTING...
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-3 w-3" />
-                  DISCONNECTED
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={useRAG}
-                onChange={(e) => setUseRAG(e.target.checked)}
-                className="w-4 h-4 bg-tesla-dark-gray border border-tesla-border focus:ring-0 focus:ring-offset-0"
-              />
-              <Database className="h-4 w-4 text-tesla-white" />
-              <span className="text-tesla-text-gray uppercase tracking-wider text-xs">USE RAG SYSTEM</span>
-            </label>
-          </div>
-        </div>
-      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-tesla-black">
+        {isLoadingHistory && (
+          <div className="flex gap-4 justify-center">
+            <div className="bg-tesla-dark-gray text-tesla-white px-4 py-3 border border-tesla-border">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm uppercase tracking-wider">
+                  LOADING CONVERSATION HISTORY...
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {messages.map((message) => (
           <div
             key={message.id}
@@ -256,7 +251,15 @@ export function ChatInterface() {
                   : 'bg-tesla-dark-gray text-tesla-white border-tesla-border hover:border-tesla-light-gray'
               }`}
             >
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+              <div 
+                className="whitespace-pre-wrap text-sm leading-relaxed prose prose-invert prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ 
+                  __html: marked(message.content, { 
+                    breaks: true,
+                    gfm: true 
+                  }) 
+                }}
+              />
               <div className={`text-xs mt-2 uppercase tracking-wider ${
                 message.role === 'user' ? 'text-tesla-medium-gray' : 'text-tesla-text-gray'
               }`}>
@@ -340,45 +343,6 @@ export function ChatInterface() {
             {connectionStatus === 'connected' ? 'SEND' : 'CONNECTING...'}
           </button>
         </form>
-        
-        <div className="mt-4 text-xs text-tesla-text-gray">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {useRAG ? (
-                <span className="flex items-center gap-2 uppercase tracking-wider">
-                  <Database className="h-3 w-3" />
-                  RAG + MEMORY ENABLED
-                </span>
-              ) : (
-                <span className="flex items-center gap-2 uppercase tracking-wider">
-                  <AlertCircle className="h-3 w-3" />
-                  RAG DISABLED
-                </span>
-              )}
-              {conversationId && (
-                <span className="uppercase tracking-wider">
-                  CONVERSATION: {conversationId.slice(-8)} | QUERIES: {queryCount}
-                </span>
-              )}
-            </div>
-            {consciousnessState && (
-              <div className="flex items-center gap-4 text-xs">
-                <span>
-                  ENERGY: {Math.round((consciousnessState.consciousness_state?.energy_level || 0) * 100)}%
-                </span>
-                <span>
-                  FOCUS: {consciousnessState.consciousness_state?.attention?.current_focus || 'N/A'}
-                </span>
-                <span>
-                  STATE: {consciousnessState.consciousness_state?.decision_state || 'N/A'}
-                </span>
-                {consciousnessState.self_awareness?.is_conscious && (
-                  <span className="text-green-400">CONSCIOUS</span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -138,8 +138,10 @@ func startNode(port, p2pPort int, bootstrapPeers []string, nodeName string) {
 
 	// Add some validation rules
 	cs.ValidationRules = append(cs.ValidationRules, func(tx *types.Transaction) bool {
-		// Skip signature validation for economic transactions for now
-		if tx.Type == types.TransactionTypeEconomic {
+		// Skip signature validation for economic and AGI transactions for now
+		if tx.Type == types.TransactionTypeEconomic || 
+		   tx.Type == types.TransactionTypeAGIUpdate || 
+		   tx.Type == types.TransactionTypeAGIEvolution {
 			return true
 		}
 		return consensus.ValidateTransaction(tx, pubKey)

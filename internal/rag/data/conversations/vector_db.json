@@ -1,39 +1,8 @@
 {
   "documents": [
     {
-      "id": "doc_Node: defa",
-      "text": "Node: default-node\nConversation: persistent_default-_2025-07-05\nType: response\nTime: 2025-07-05T20:09:16+08:00\nContent: \nDuration: 11.25µs\nError: llm generation failed\nMetadata:\n  query_event_id: query_default-node_1751717356325145000\n  node_id: default-node\n  duration_ms: 0\n\nJSON: {\"id\":\"response_default-node_1751717356325156000\",\"type\":\"response\",\"content\":\"\",\"timestamp\":\"2025-07-05T20:09:16.325156+08:00\",\"metadata\":{\"duration_ms\":0,\"node_id\":\"default-node\",\"query_event_id\":\"query_default-node_1751717356325145000\"},\"duration\":11250,\"success\":false,\"error_msg\":\"llm generation failed\",\"conversation_id\":\"persistent_default-_2025-07-05\"}",
-      "embedding": [
-        0.11,
-        0.21,
-        0.31
-      ],
-      "metadata": {
-        "content_hash": "00000000",
-        "content_length": 0,
-        "content_words": 0,
-        "conversation_id": "persistent_default-_2025-07-05",
-        "date": "2025-07-05",
-        "day_of_week": "Saturday",
-        "duration_ms": 0,
-        "event_id": "response_default-node_1751717356325156000",
-        "event_type": "response",
-        "has_error": true,
-        "has_response": false,
-        "hour": "20",
-        "node_id": "default-node",
-        "original_duration_ms": 0,
-        "original_node_id": "default-node",
-        "original_query_event_id": "query_default-node_1751717356325145000",
-        "response_length": 0,
-        "session_time": 0.000024545833333333335,
-        "success": false,
-        "timestamp": 1751717356
-      }
-    },
-    {
       "id": "doc_CONTEXT WI",
-      "text": "CONTEXT WINDOW - INTERACTION\nNode ID: default-node\nTimestamp: 2025-07-05T20:09:16+08:00\nIntelligence Level: 8.9\n\nContext Data:\n- timestamp: 1751717356\n- metadata: map[duration_ms:0 error_msg:llm generation failed query_event_id:query_default-node_1751717356325145000 success:false]\n- input_type: response\n- content_length: 0\n\nRAW_CONTEXT_JSON: {\"content_length\":0,\"input_type\":\"response\",\"metadata\":{\"duration_ms\":0,\"error_msg\":\"llm generation failed\",\"query_event_id\":\"query_default-node_1751717356325145000\",\"success\":false},\"timestamp\":1751717356}",
+      "text": "CONTEXT WINDOW - INTERACTION\nNode ID: default-node\nTimestamp: 2025-08-08T12:28:57-04:00\nIntelligence Level: 8.9\n\nContext Data:\n- timestamp: 1754670537\n- metadata: map[duration_ms:0 error_msg:llm generation failed query_event_id:query_default-node_1754670537167435000 success:false]\n- input_type: response\n- content_length: 0\n\nRAW_CONTEXT_JSON: {\"content_length\":0,\"input_type\":\"response\",\"metadata\":{\"duration_ms\":0,\"error_msg\":\"llm generation failed\",\"query_event_id\":\"query_default-node_1754670537167435000\",\"success\":false},\"timestamp\":1754670537}",
       "embedding": [
         0.11,
         0.21,
@@ -43,7 +12,7 @@
         "context_type": "interaction",
         "intelligence_level": 8.95,
         "node_id": "default-node",
-        "timestamp": 1751717356,
+        "timestamp": 1754670537,
         "type": "context_window"
       }
     },
@@ -89,6 +58,37 @@
       "metadata": {
         "id": "doc1"
       }
+    },
+    {
+      "id": "doc_Node: defa",
+      "text": "Node: default-node\nConversation: conv_default-node_1754670537\nType: response\nTime: 2025-08-08T12:28:57-04:00\nContent: \nDuration: 11.5µs\nError: llm generation failed\nMetadata:\n  query_event_id: query_default-node_1754670537167435000\n  node_id: default-node\n  duration_ms: 0\n\nJSON: {\"id\":\"response_default-node_1754670537167447000\",\"type\":\"response\",\"content\":\"\",\"timestamp\":\"2025-08-08T12:28:57.167447-04:00\",\"metadata\":{\"duration_ms\":0,\"node_id\":\"default-node\",\"query_event_id\":\"query_default-node_1754670537167435000\"},\"duration\":11500,\"success\":false,\"error_msg\":\"llm generation failed\",\"conversation_id\":\"conv_default-node_1754670537\"}",
+      "embedding": [
+        0.11,
+        0.21,
+        0.31
+      ],
+      "metadata": {
+        "content_hash": "00000000",
+        "content_length": 0,
+        "content_words": 0,
+        "conversation_id": "conv_default-node_1754670537",
+        "date": "2025-08-08",
+        "day_of_week": "Friday",
+        "duration_ms": 0,
+        "event_id": "response_default-node_1754670537167447000",
+        "event_type": "response",
+        "has_error": true,
+        "has_response": false,
+        "hour": "12",
+        "node_id": "default-node",
+        "original_duration_ms": 0,
+        "original_node_id": "default-node",
+        "original_query_event_id": "query_default-node_1754670537167435000",
+        "response_length": 0,
+        "session_time": 0.0000261368,
+        "success": false,
+        "timestamp": 1754670537
+      }
     }
   ],
   "index": {
@@ -96,5 +96,5 @@
     "dimensions": 3,
     "size": 5
   },
-  "saved_at": "2025-07-05T20:09:16.329599+08:00"
+  "saved_at": "2025-08-08T12:28:57.171722-04:00"
 }

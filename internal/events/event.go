@@ -102,6 +102,7 @@ const (
 	EventTypeServiceRegister   = "api.service_register"
 	EventTypeServiceDeregister = "api.service_deregister"
 	EventTypeGetServices       = "api.get_services"
+	EventTypeGetConversationHistory = "api.get_conversation_history"
 	
 	// Domain Events (Something happened)
 	EventTypeQueryStarted      = "query.started"
@@ -126,6 +127,7 @@ const (
 	EventTypePeersData         = "api.peers_data"
 	EventTypeWalletData        = "api.wallet_data"
 	EventTypeServicesData      = "api.services_data"
+	EventTypeConversationHistoryData = "api.conversation_history_data"
 	
 	// Integration Events (Cross-boundary)
 	EventTypeWebSocketMessage  = "websocket.message"

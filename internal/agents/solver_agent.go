@@ -78,7 +78,7 @@ func NewSolverAgentWithRAG(config *SolverConfig, ragSystem *rag.RAGSystem) *Solv
 	// Set default model preference: Ollama > OpenAI > Mock
 	if config.DefaultModel == "" {
 		if ollamaAvailable {
-			config.DefaultModel = "ollama-cogito" // First Ollama model registered
+			config.DefaultModel = "ollama-cogito:latest" // First Ollama model registered
 		} else if openaiAvailable {
 			config.DefaultModel = "openai-gpt-3.5-turbo" // First OpenAI model registered
 		} else {
@@ -131,7 +131,7 @@ func tryRegisterOllamaModels(manager *ai.ModelManager) error {
 	config := ai.DefaultOllamaConfig()
 
 	// Create a test model to check connectivity
-	testModel := ai.NewOllamaModel("cogito", config)
+	testModel := ai.NewOllamaModel("cogito:latest", config)
 
 	// Check if Ollama is healthy
 	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
@@ -142,7 +142,7 @@ func tryRegisterOllamaModels(manager *ai.ModelManager) error {
 	}
 
 	// Register default models - use only available models
-	models := []string{"cogito", "llama3.2:3b", "llama3.2:1b"}
+	models := []string{"cogito:latest", "llama3.2:3b", "llama3.2:1b"}
 	for _, modelName := range models {
 		model := ai.NewOllamaModel(modelName, config)
 		manager.RegisterModel(model)

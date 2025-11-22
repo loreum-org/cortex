@@ -29,7 +29,7 @@ func NewStandardSolverAgent(nodeID string, config *SolverConfig, ragSystem *rag.
 	// Initialize config if nil
 	if config == nil {
 		config = &SolverConfig{
-			DefaultModel: "ollama-cogito",
+			DefaultModel: "ollama-cogito:latest",
 		}
 	}
 
@@ -134,7 +134,7 @@ func (s *StandardSolverAgent) Initialize(ctx context.Context, config map[string]
 	// Set default model preference: Ollama > OpenAI > Mock
 	if s.solverConfig.DefaultModel == "" {
 		if ollamaAvailable {
-			s.solverConfig.DefaultModel = "ollama-cogito"
+			s.solverConfig.DefaultModel = "ollama-cogito:latest"
 		} else if openaiAvailable {
 			s.solverConfig.DefaultModel = "openai-gpt-3.5-turbo"
 		} else {
@@ -242,6 +242,24 @@ func (s *StandardSolverAgent) SetRAGSystem(ragSystem *rag.RAGSystem) {
 	if ragSystem != nil && ragSystem.ContextManager != nil && s.modelManager != nil {
 		ragSystem.ContextManager.SetModelManager(s.modelManager, s.solverConfig.DefaultModel)
 	}
+}
+
+// SetModelManager sets the model manager and updates the default model
+func (s *StandardSolverAgent) SetModelManager(modelManager *ai.ModelManager, defaultModel string) {
+	s.modelManager = modelManager
+	s.solverConfig.DefaultModel = defaultModel
+
+	// Update agent info
+	info := s.GetInfo()
+	info.ModelID = defaultModel
+	s.UpdateInfo(info)
+
+	// Update consciousness runtime if available
+	if s.ragSystem != nil && s.ragSystem.ContextManager != nil {
+		s.ragSystem.ContextManager.SetModelManager(modelManager, defaultModel)
+	}
+
+	log.Printf("[StandardSolver] SetModelManager called with defaultModel: %s", defaultModel)
 }
 
 // SetEconomicEngine sets the economic engine for query result tracking

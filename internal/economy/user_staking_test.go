@@ -20,8 +20,8 @@ func setupTestStakingEnvironment(t *testing.T) (*EconomicEngine, *UserStakingMan
 		_, err := engine.CreateUserAccount(userID, "0x"+userID)
 		require.NoError(t, err)
 
-		// Fund user with 10,000 tokens
-		fundAmount := new(big.Int).Mul(big.NewInt(10000), TokenUnit)
+		// Fund user with 15,000 tokens (enough for max stake tests)
+		fundAmount := new(big.Int).Mul(big.NewInt(15000), TokenUnit)
 		_, err = engine.MintTokens(userID, fundAmount, "Test funding")
 		require.NoError(t, err)
 	}
@@ -112,22 +112,39 @@ func TestStakeToNode(t *testing.T) {
 
 	// Test case 4: Adding to existing stake
 	t.Run("AddToExistingStake", func(t *testing.T) {
-		userID := "user1"
-		nodeID := "node1"
-		additionalStake := new(big.Int).Mul(big.NewInt(50), TokenUnit)
-
-		// Get current stake
+		userID := "user4" // Use a different user to avoid conflicts
+		nodeID := "node4" // Use a different node
+		
+		// Create the user and node for this test
+		_, err := engine.CreateUserAccount(userID, "0x"+userID)
+		require.NoError(t, err)
+		_, err = engine.CreateNodeAccount(nodeID)
+		require.NoError(t, err)
+		
+		// Fund the user
+		fundAmount := new(big.Int).Mul(big.NewInt(15000), TokenUnit)
+		_, err = engine.MintTokens(userID, fundAmount, "Test funding")
+		require.NoError(t, err)
+		
+		// First, stake an initial amount
+		initialStake := new(big.Int).Mul(big.NewInt(100), TokenUnit)
+		_, err = stakingManager.StakeToNode(userID, nodeID, initialStake)
+		require.NoError(t, err)
+		
+		// Get current stake info after first stake
 		nodeStakeInfoBefore := stakingManager.GetNodeStakeInfo(nodeID)
 		userStakesBefore := stakingManager.GetUserStakes(userID)
 		require.NotEmpty(t, userStakesBefore)
-		originalStake := userStakesBefore[0].Amount
-
+		originalStake := new(big.Int).Set(userStakesBefore[0].Amount) // Make a copy!
+		
 		// Add more stake
+		additionalStake := new(big.Int).Mul(big.NewInt(50), TokenUnit)
 		stake, err := stakingManager.StakeToNode(userID, nodeID, additionalStake)
 		require.NoError(t, err)
 
-		// Check stake was increased
-		expectedAmount := new(big.Int).Add(originalStake, additionalStake)
+		// Check stake was increased - should be original + additional
+		expectedAmount := new(big.Int).Set(originalStake)
+		expectedAmount.Add(expectedAmount, additionalStake)
 		assert.Equal(t, expectedAmount, stake.Amount)
 
 		// Check node total stake was increased

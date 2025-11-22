@@ -101,6 +101,7 @@ func (wh *WebSocketEventHandler) SubscribedEvents() []string {
 		events.EventTypePeersData,
 		events.EventTypeWalletData,
 		events.EventTypeServicesData,
+		events.EventTypeConversationHistoryData,
 	}
 }
 
@@ -147,7 +148,7 @@ func (wh *WebSocketEventHandler) Handle(ctx context.Context, event events.Event)
 	case events.EventTypeModelsData, events.EventTypeAgentsData, events.EventTypeStatusData,
 		events.EventTypeMetricsData, events.EventTypeTransactionsData, events.EventTypeAccountsData,
 		events.EventTypeNodeInfoData, events.EventTypePeersData, events.EventTypeWalletData,
-		events.EventTypeServicesData:
+		events.EventTypeServicesData, events.EventTypeConversationHistoryData:
 		return wh.handleAPIResponse(ctx, event)
 
 	default:
@@ -254,6 +255,8 @@ func (wh *WebSocketEventHandler) handleWebSocketRequest(conn *WebSocketConnectio
 		domainEvent = wh.createGetStatusEvent(conn, msg)
 	case "getMetrics":
 		domainEvent = wh.createGetMetricsEvent(conn, msg)
+	case "getConversationHistory":
+		domainEvent = wh.createGetConversationHistoryEvent(conn, msg)
 
 	// Network operations
 	case "getNodeInfo":
@@ -888,6 +891,26 @@ func (wh *WebSocketEventHandler) createGetServicesEvent(conn *WebSocketConnectio
 		map[string]interface{}{
 			"request_type": "get_services",
 		},
+		msg.ID,
+	).WithMetadata("connection_id", conn.ID)
+}
+
+func (wh *WebSocketEventHandler) createGetConversationHistoryEvent(conn *WebSocketConnection, msg *UnifiedMessage) events.Event {
+	data := make(map[string]interface{})
+	data["request_type"] = "get_conversation_history"
+	
+	if msg.Data != nil {
+		if dataMap, ok := msg.Data.(map[string]interface{}); ok {
+			if limit, exists := dataMap["limit"]; exists {
+				data["limit"] = limit
+			}
+		}
+	}
+	
+	return events.NewEventWithCorrelation(
+		events.EventTypeGetConversationHistory,
+		"websocket",
+		data,
 		msg.ID,
 	).WithMetadata("connection_id", conn.ID)
 }

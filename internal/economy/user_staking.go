@@ -284,8 +284,8 @@ func (usm *UserStakingManager) SlashNode(nodeID, reason string, severity float64
 		return nil, fmt.Errorf("slashing is disabled")
 	}
 
-	if severity < 0 || severity > 1 {
-		return nil, fmt.Errorf("severity must be between 0 and 1")
+	if severity <= 0 || severity > 1 {
+		return nil, fmt.Errorf("severity must be between 0 and 1 (exclusive of 0)")
 	}
 
 	nodeStakes := usm.nodeStakes[nodeID]
@@ -459,10 +459,21 @@ func (usm *UserStakingManager) updateNodeReputation(nodeID string) {
 		}
 	}
 
-	// Update reputation in consensus system
-	// We'll need to access this through a different mechanism
-	// For now, just log the intended reputation change
-	log.Printf("Would update reputation for node %s with boost: %.2f", nodeID, reputationBoost)
+	// Update reputation through economic engine
+	if nodeAccount, err := usm.economicEngine.GetNodeAccount(nodeID); err == nil {
+		// Apply performance penalties for slashing
+		if performance := usm.nodePerformance[nodeID]; performance != nil && len(performance.SlashingEvents) > 0 {
+			// Recent slashing should reduce reputation
+			recentSlashingPenalty := 5.0 // Reduce by 5 points for recent slashing
+			nodeAccount.Reputation -= recentSlashingPenalty
+			if nodeAccount.Reputation < 0 {
+				nodeAccount.Reputation = 0
+			}
+		}
+		log.Printf("Updated reputation for node %s: reputation=%.2f, stake_boost=%.2f", nodeID, nodeAccount.Reputation, reputationBoost)
+	} else {
+		log.Printf("Could not update reputation for node %s: %v (boost: %.2f)", nodeID, err, reputationBoost)
+	}
 }
 
 // Public query methods

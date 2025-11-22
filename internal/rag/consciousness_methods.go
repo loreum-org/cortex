@@ -55,16 +55,70 @@ func (agi *AGIPromptSystem) loadWorkingMemory(ctx context.Context) map[string]in
 		// Get actual conversation history from vector DB
 		if conversationContext, err := agi.contextManager.GetConversationContext(ctx, 10); err == nil {
 			context["conversation_history"] = conversationContext
-			agi.workingMemory.ActiveContext["conversation_history"] = conversationContext
+			if agi.workingMemory != nil {
+				agi.workingMemory.ActiveContext["conversation_history"] = conversationContext
+			}
 		} else {
-			context["conversation_history"] = "This is the beginning of our conversation."
+			// Try to get conversation history from working memory if context manager fails
+			if agi.workingMemory != nil && len(agi.workingMemory.ShortTermMemory) > 0 {
+				var historyBuilder strings.Builder
+				historyBuilder.WriteString("Previous conversation context from memory:\n")
+				
+				// Get recent conversation memories
+				conversationMemories := 0
+				for _, fragment := range agi.workingMemory.ShortTermMemory {
+					if fragment.Type == "query" || fragment.Type == "response" || fragment.Type == "conversation_retrieval" {
+						if conversationMemories < 5 { // Limit to 5 most recent
+							timestamp := fragment.Timestamp.Format("15:04:05")
+							historyBuilder.WriteString(fmt.Sprintf("[%s] %s: %s\n", timestamp, fragment.Type, fragment.Content))
+							conversationMemories++
+						}
+					}
+				}
+				
+				if conversationMemories > 0 {
+					context["conversation_history"] = historyBuilder.String()
+					if agi.workingMemory != nil {
+						agi.workingMemory.ActiveContext["conversation_history"] = historyBuilder.String()
+					}
+					log.Printf("[AGI-Consciousness] Using %d conversation memories from working memory", conversationMemories)
+				} else {
+					context["conversation_history"] = "This appears to be the beginning of our conversation, though I may have memories from previous sessions."
+				}
+			} else {
+				context["conversation_history"] = "This is the beginning of our conversation."
+			}
 		}
 		context["conversation_id"] = agi.contextManager.conversationID
 
 		// Load recent conversation events for better context
 		if history, err := agi.contextManager.GetRecentConversationHistory(ctx, 5); err == nil && len(history) > 0 {
 			context["recent_events"] = history
-			agi.workingMemory.ActiveContext["recent_events"] = history
+			if agi.workingMemory != nil {
+				agi.workingMemory.ActiveContext["recent_events"] = history
+			}
+		}
+		
+		// Add persistent conversation memory info
+		if agi.workingMemory != nil {
+			memoryFragmentCount := len(agi.workingMemory.ShortTermMemory)
+			restoredMemoryCount := 0
+			for _, fragment := range agi.workingMemory.ShortTermMemory {
+				if restored, ok := fragment.Metadata["restored"].(bool); ok && restored {
+					restoredMemoryCount++
+				}
+			}
+			context["memory_status"] = map[string]interface{}{
+				"total_fragments":    memoryFragmentCount,
+				"restored_memories":  restoredMemoryCount,
+				"memory_enabled":     true,
+			}
+		} else {
+			context["memory_status"] = map[string]interface{}{
+				"total_fragments":    0,
+				"restored_memories":  0,
+				"memory_enabled":     false,
+			}
 		}
 	}
 
@@ -77,7 +131,9 @@ func (agi *AGIPromptSystem) loadWorkingMemory(ctx context.Context) map[string]in
 			context["user_name"] = userProfile.Name
 			context["user_preferred_name"] = userProfile.PreferredName
 			context["user_work_context"] = userProfile.WorkContext
-			agi.workingMemory.ActiveContext["user_profile"] = userProfile
+			if agi.workingMemory != nil {
+				agi.workingMemory.ActiveContext["user_profile"] = userProfile
+			}
 
 			if userProfile.Name != "" {
 				log.Printf("[AGI-Consciousness] Loaded user profile: %s", userProfile.Name)
@@ -87,17 +143,23 @@ func (agi *AGIPromptSystem) loadWorkingMemory(ctx context.Context) map[string]in
 
 	// Load working memory state
 	context["consciousness_state"] = agi.currentState
-	context["working_memory"] = agi.workingMemory
-	context["recent_inputs"] = agi.workingMemory.RecentInputs
-	context["active_goals"] = agi.workingMemory.Goals
-	context["beliefs"] = agi.workingMemory.Beliefs
+	if agi.workingMemory != nil {
+		context["working_memory"] = agi.workingMemory
+		context["recent_inputs"] = agi.workingMemory.RecentInputs
+		context["active_goals"] = agi.workingMemory.Goals
+		context["beliefs"] = agi.workingMemory.Beliefs
+		agi.workingMemory.LastUpdated = time.Now()
+	} else {
+		context["working_memory"] = nil
+		context["recent_inputs"] = make([]*SensorInput, 0)
+		context["active_goals"] = make([]Goal, 0)
+		context["beliefs"] = make(map[string]float64)
+	}
 
 	// Add system context
 	context["node_id"] = agi.nodeID
 	context["cycle_count"] = agi.currentState.CurrentCycle
 	context["timestamp"] = time.Now()
-
-	agi.workingMemory.LastUpdated = time.Now()
 
 	return context
 }
@@ -137,6 +199,27 @@ func (agi *AGIPromptSystem) makeDecision(ctx context.Context, intents []Intent, 
 func (agi *AGIPromptSystem) executeAction(ctx context.Context, decisions []Decision) []ActionResult {
 	results := make([]ActionResult, 0)
 
+	// Safety check: ensure actionExecutor is initialized
+	if agi.actionExecutor == nil {
+		log.Printf("[AGI-ERROR] CRITICAL: actionExecutor is nil! AGI system may not be properly initialized.")
+		log.Printf("[AGI-ERROR] NodeID: %s, Decisions count: %d", agi.nodeID, len(decisions))
+		log.Printf("[AGI-ERROR] IntentAnalyzer nil: %v, DecisionEngine nil: %v, ActionExecutor nil: %v",
+			agi.intentAnalyzer == nil, agi.decisionEngine == nil, agi.actionExecutor == nil)
+
+		// Return error results for all decisions
+		for _, decision := range decisions {
+			results = append(results, ActionResult{
+				DecisionID: decision.ID,
+				Action:     decision.ChosenAction,
+				Success:    false,
+				Result:     "System error: action executor not initialized",
+				ErrorMsg:   "actionExecutor is nil - system not properly initialized",
+				Timestamp:  time.Now(),
+			})
+		}
+		return results
+	}
+
 	for _, decision := range decisions {
 		result := agi.actionExecutor.ExecuteAction(ctx, &decision)
 		results = append(results, result)
@@ -147,6 +230,10 @@ func (agi *AGIPromptSystem) executeAction(ctx context.Context, decisions []Decis
 
 // updateMemory learns from the experience (Step 6)
 func (agi *AGIPromptSystem) updateMemory(ctx context.Context, inputs []*SensorInput, decisions []Decision, results []ActionResult) {
+	if agi.workingMemory == nil {
+		return
+	}
+	
 	// Update working memory with recent inputs
 	for _, input := range inputs {
 		agi.workingMemory.RecentInputs = append(agi.workingMemory.RecentInputs, input)
@@ -199,14 +286,16 @@ func (agi *AGIPromptSystem) updateMemory(ctx context.Context, inputs []*SensorIn
 	}
 
 	// Clean up expired memory fragments
-	now := time.Now()
-	filtered := make([]MemoryFragment, 0)
-	for _, fragment := range agi.workingMemory.ShortTermMemory {
-		if now.Before(fragment.ExpiresAt) {
-			filtered = append(filtered, fragment)
+	if agi.workingMemory != nil {
+		now := time.Now()
+		filtered := make([]MemoryFragment, 0)
+		for _, fragment := range agi.workingMemory.ShortTermMemory {
+			if now.Before(fragment.ExpiresAt) {
+				filtered = append(filtered, fragment)
+			}
 		}
+		agi.workingMemory.ShortTermMemory = filtered
 	}
-	agi.workingMemory.ShortTermMemory = filtered
 
 	// Update AGI system with learning - this integrates with the existing learning
 	go func() {
@@ -232,6 +321,21 @@ func (agi *AGIPromptSystem) updateMemory(ctx context.Context, inputs []*SensorIn
 func (agi *AGIPromptSystem) updateAttention(inputs []*SensorInput) {
 	if len(inputs) == 0 {
 		return
+	}
+	
+	// Check if currentState and Attention are initialized
+	if agi.currentState == nil {
+		return
+	}
+	
+	if agi.currentState.Attention == nil {
+		agi.currentState.Attention = &AttentionState{
+			PrimaryFocus:    "",
+			SecondaryFoci:   []string{},
+			FocusStrength:   0.0,
+			DistractionLevel: 0.0,
+			FocusDuration:   time.Duration(0),
+		}
 	}
 
 	// Find highest priority input
@@ -516,6 +620,19 @@ func (ae *ActionExecutor) ExecuteAction(ctx context.Context, decision *Decision)
 }
 
 func (ae *ActionExecutor) executeAnswerQuestion(ctx context.Context, decision *Decision) ActionResult {
+	// Safety check: ensure ActionExecutor is not nil
+	if ae == nil {
+		log.Printf("[ActionExecutor] ERROR: ActionExecutor receiver is nil!")
+		return ActionResult{
+			DecisionID: decision.ID,
+			Action:     decision.ChosenAction,
+			Success:    false,
+			Result:     "System error: action executor not initialized",
+			ErrorMsg:   "ActionExecutor is nil",
+			Timestamp:  time.Now(),
+		}
+	}
+
 	// Get the original query from the decision action params
 	var queryText string
 	if decision.ActionParams != nil {
@@ -538,14 +655,46 @@ func (ae *ActionExecutor) executeAnswerQuestion(ctx context.Context, decision *D
 
 	// Use AGI prompt system for response generation
 	log.Printf("[ActionExecutor] Processing query with AGI: %s", queryText)
-	
+
+	// Safety check: ensure agiSystem is not nil before calling GetAGIPromptForQuery
+	if ae.agiSystem == nil {
+		log.Printf("[ActionExecutor] ERROR: agiSystem is nil - cannot get AGI prompt")
+		return ActionResult{
+			DecisionID: decision.ID,
+			Action:     decision.ChosenAction,
+			Success:    false,
+			Result:     "System error: AGI system not initialized",
+			ErrorMsg:   "agiSystem is nil",
+			Timestamp:  time.Now(),
+		}
+	}
+
 	// Get AGI-enhanced prompt
 	agiPrompt := ae.agiSystem.GetAGIPromptForQuery(ctx, queryText)
-	
+	log.Printf("[ActionExecutor] Generated AGI prompt: %s", agiPrompt[:min(200, len(agiPrompt))])
+
 	// Try to use AI model if available
-	if ae.modelManager != nil {
-		if mm, ok := ae.modelManager.(*ai.ModelManager); ok && ae.defaultModel != "" {
-			if model, err := mm.GetModel(ae.defaultModel); err == nil {
+	if ae.modelManager == nil {
+		log.Printf("[ActionExecutor] ERROR: modelManager is nil - model not configured")
+	} else {
+		log.Printf("[ActionExecutor] modelManager is available")
+		if mm, ok := ae.modelManager.(*ai.ModelManager); !ok {
+			log.Printf("[ActionExecutor] ERROR: modelManager type assertion failed, got type: %T", ae.modelManager)
+		} else if ae.defaultModel == "" {
+			log.Printf("[ActionExecutor] ERROR: defaultModel is empty")
+		} else {
+			// List all registered models for debugging
+			allModels := mm.ListModels()
+			modelIDs := make([]string, len(allModels))
+			for i, m := range allModels {
+				modelIDs[i] = m.ID
+			}
+			log.Printf("[ActionExecutor] Registered models: %v", modelIDs)
+			log.Printf("[ActionExecutor] Attempting to get model: %s", ae.defaultModel)
+			if model, err := mm.GetModel(ae.defaultModel); err != nil {
+				log.Printf("[ActionExecutor] ERROR: Failed to get model %s: %v", ae.defaultModel, err)
+			} else {
+				log.Printf("[ActionExecutor] Successfully got model, generating response...")
 				// Create generation options for comprehensive responses
 				options := ai.GenerateOptions{
 					MaxTokens:   1000,
@@ -554,7 +703,9 @@ func (ae *ActionExecutor) executeAnswerQuestion(ctx context.Context, decision *D
 				}
 
 				// Generate response using AGI prompt
-				if response, err := model.GenerateResponse(ctx, agiPrompt, options); err == nil {
+				if response, err := model.GenerateResponse(ctx, agiPrompt, options); err != nil {
+					log.Printf("[ActionExecutor] ERROR: Failed to generate response: %v", err)
+				} else {
 					log.Printf("[ActionExecutor] Generated AGI response: %s", response[:min(100, len(response))])
 					return ActionResult{
 						DecisionID: decision.ID,
@@ -660,4 +811,5 @@ func (ae *ActionExecutor) executeAcknowledgeInput(ctx context.Context, decision 
 func (ae *ActionExecutor) SetModelManager(modelManager interface{}, defaultModel string) {
 	ae.modelManager = modelManager
 	ae.defaultModel = defaultModel
+	log.Printf("[ActionExecutor] SetModelManager called with defaultModel: %s", defaultModel)
 }

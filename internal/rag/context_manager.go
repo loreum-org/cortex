@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -15,8 +16,6 @@ import (
 type ContextManager struct {
 	ragSystem            *RAGSystem
 	agiSystem            *AGIPromptSystem
-	consciousnessRuntime *ConsciousnessRuntime
-	agiAgentBridge       *AGIAgentBridge
 	nodeID               string
 	conversationID       string
 	sessionStartTime     time.Time
@@ -53,7 +52,8 @@ type ConversationSummary struct {
 
 // NewContextManager creates a new context manager for the node owner
 func NewContextManager(ragSystem *RAGSystem, nodeID string) *ContextManager {
-	conversationID := fmt.Sprintf("conv_%s_%d", nodeID, time.Now().Unix())
+	// Use persistent conversation ID based on node ID only - will be updated in LoadOrCreatePersistentConversation
+	conversationID := fmt.Sprintf("persistent_conv_%s", nodeID)
 
 	cm := &ContextManager{
 		ragSystem:        ragSystem,
@@ -64,31 +64,32 @@ func NewContextManager(ragSystem *RAGSystem, nodeID string) *ContextManager {
 		maxBufferSize:    50, // Buffer recent activities before embedding
 	}
 
-	// Initialize AGI system
+	// Initialize AGI system with integrated consciousness
 	cm.agiSystem = NewAGIPromptSystem(ragSystem, cm, nodeID)
 
-	// Initialize consciousness runtime
-	cm.consciousnessRuntime = NewConsciousnessRuntime(cm.agiSystem, ragSystem, cm, nodeID)
-
-	// Load or create persistent conversation
+	// Load or create persistent conversation and then start AGI consciousness
 	go func() {
 		ctx := context.Background()
+		
+		// Load conversation context first
 		if err := cm.LoadOrCreatePersistentConversation(ctx); err != nil {
 			log.Printf("Failed to load persistent conversation: %v", err)
+		} else {
+			log.Printf("[ContextManager] Loaded persistent conversation context for node %s", nodeID)
+		}
+		
+		// Wait a moment for context to be fully loaded
+		time.Sleep(time.Millisecond * 1000)
+		
+		// Start AGI consciousness loop after context is loaded
+		if err := cm.agiSystem.StartConsciousnessLoop(ctx); err != nil {
+			log.Printf("Failed to start AGI consciousness loop: %v", err)
+		} else {
+			log.Printf("[ContextManager] AGI consciousness loop started after conversation context loading")
 		}
 	}()
 
-	// Start consciousness runtime
-	go func() {
-		ctx := context.Background()
-		// Wait a moment for conversation loading
-		time.Sleep(time.Millisecond * 500)
-		if err := cm.consciousnessRuntime.Start(ctx); err != nil {
-			log.Printf("Failed to start consciousness runtime: %v", err)
-		}
-	}()
-
-	log.Printf("[ContextManager] Initialized with consciousness runtime for node %s", nodeID)
+	log.Printf("[ContextManager] Initialized with persistent conversation memory for node %s", nodeID)
 
 	return cm
 }
@@ -175,10 +176,36 @@ func (cm *ContextManager) GetConversationContext(ctx context.Context, maxEvents 
 
 // GetPersistentConversationID returns a persistent conversation ID that survives restarts
 func (cm *ContextManager) GetPersistentConversationID() string {
-	// Create a deterministic conversation ID based on node ID and date
-	// This allows conversations to continue across restarts within the same day
-	dateStr := time.Now().Format("2006-01-02")
-	return fmt.Sprintf("persistent_%s_%s", cm.nodeID[:8], dateStr)
+	// Use a stable node ID that persists across restarts
+	// instead of the P2P node ID which changes every restart
+	stableID := cm.getStableNodeID()
+	return fmt.Sprintf("persistent_conv_%s", stableID)
+}
+
+// getStableNodeID returns a stable node identifier that persists across restarts
+func (cm *ContextManager) getStableNodeID() string {
+	// Try to load existing stable ID from file
+	stableIDPath := "data/.cortex_node_id"
+	if data, err := os.ReadFile(stableIDPath); err == nil {
+		return strings.TrimSpace(string(data))
+	}
+
+	// If file doesn't exist, create a new stable ID based on hostname or generate one
+	stableID := "cortex_node_stable_001"
+	if hostname, err := os.Hostname(); err == nil {
+		// Use hostname as part of stable ID
+		stableID = fmt.Sprintf("cortex_node_%s", hostname)
+	}
+
+	// Save the stable ID for future use
+	os.MkdirAll("data", 0755)
+	if err := os.WriteFile(stableIDPath, []byte(stableID), 0644); err != nil {
+		log.Printf("[ContextManager] Warning: Failed to save stable node ID: %v", err)
+	} else {
+		log.Printf("[ContextManager] Created new stable node ID: %s", stableID)
+	}
+
+	return stableID
 }
 
 // GetUserPersistentConversationID returns a user-specific persistent conversation ID
@@ -212,24 +239,56 @@ func (cm *ContextManager) hashUserID(userID string) string {
 func (cm *ContextManager) LoadOrCreatePersistentConversation(ctx context.Context) error {
 	persistentID := cm.GetPersistentConversationID()
 
-	// Check if we have any history for this persistent conversation
-	history, err := cm.GetRecentConversationHistory(ctx, 1)
-	if err == nil && len(history) > 0 {
-		// Found existing conversation, update our conversation ID
-		cm.conversationID = persistentID
-		log.Printf("[ContextManager] Loaded persistent conversation: %s", persistentID)
+	// Always use the persistent conversation ID
+	cm.conversationID = persistentID
+	
+	// First check vector database directly for conversation history
+	// This is critical for loading context after node restarts
+	vectorHistory := cm.searchVectorDBForHistory(ctx, 10) // Get some recent history
+	
+	// Also check activity buffer (will be empty on restart)
+	bufferHistory, err := cm.GetRecentConversationHistory(ctx, 5)
+	
+	hasVectorHistory := len(vectorHistory) > 0
+	hasBufferHistory := err == nil && len(bufferHistory) > 0
+	
+	if hasVectorHistory || hasBufferHistory {
+		// Found existing conversation data
+		log.Printf("[ContextManager] Loaded persistent conversation: %s (%d vector events, %d buffer events)", 
+			persistentID, len(vectorHistory), len(bufferHistory))
 
-		// Update consciousness runtime if available
-		if cm.consciousnessRuntime != nil {
-			// Load recent context into working memory
-			contextStr, _ := cm.GetConversationContext(ctx, 10)
-			if cm.consciousnessRuntime.workingMemory != nil {
-				cm.consciousnessRuntime.workingMemory.ActiveContext["conversation_history"] = contextStr
+		// Pre-populate activity buffer with recent vector history for immediate context
+		if hasVectorHistory && len(cm.activityBuffer) < 5 {
+			// Convert vector history back to activity events and add to buffer
+			for i, vectorEvent := range vectorHistory {
+				if i >= 5 { // Limit to prevent buffer overflow
+					break
+				}
+				// Add as context restoration events
+				contextEvent := ActivityEvent{
+					ID:             fmt.Sprintf("restored_%d_%s", i, cm.nodeID),
+					Type:           "context_restoration", 
+					Content:        vectorEvent.Content,
+					Timestamp:      vectorEvent.Timestamp,
+					ConversationID: cm.conversationID,
+					Success:        true,
+					Metadata: map[string]interface{}{
+						"restored_from": "vector_db",
+						"original_type": vectorEvent.Type,
+					},
+				}
+				cm.activityBuffer = append(cm.activityBuffer, contextEvent)
 			}
+			log.Printf("[ContextManager] Restored %d events to activity buffer from vector database", len(vectorHistory))
+		}
+
+		// Update AGI system with conversation context if available
+		if cm.agiSystem != nil {
+			log.Printf("[ContextManager] AGI system will load conversation context automatically")
 		}
 	} else {
 		// No existing conversation, keep current session-based ID
-		log.Printf("[ContextManager] Starting new conversation session: %s", cm.conversationID)
+		log.Printf("[ContextManager] Starting new conversation session: %s (no prior history found)", cm.conversationID)
 	}
 
 	// Ensure the conversation ID is tracked in user profile
@@ -282,8 +341,10 @@ func (cm *ContextManager) TrackQuery(ctx context.Context, query string, queryTyp
 }
 
 // GetConsciousnessRuntime returns the consciousness runtime
-func (cm *ContextManager) GetConsciousnessRuntime() *ConsciousnessRuntime {
-	return cm.consciousnessRuntime
+// GetConsciousnessRuntime returns nil - DEPRECATED: Use GetAGISystem instead
+// Consciousness functionality is now integrated into AGI system
+func (cm *ContextManager) GetConsciousnessRuntime() interface{} {
+	return nil
 }
 
 // GetConversationID returns the current conversation ID
@@ -291,11 +352,11 @@ func (cm *ContextManager) GetConversationID() string {
 	return cm.conversationID
 }
 
-// SetModelManager configures consciousness with access to AI models
+// SetModelManager configures AGI system with access to AI models
 func (cm *ContextManager) SetModelManager(modelManager interface{}, defaultModel string) {
-	if cm.consciousnessRuntime != nil {
-		cm.consciousnessRuntime.SetModelManager(modelManager, defaultModel)
-		log.Printf("[ContextManager] Configured consciousness with model manager, default model: %s", defaultModel)
+	if cm.agiSystem != nil {
+		cm.agiSystem.SetModelManager(modelManager, defaultModel)
+		log.Printf("[ContextManager] Configured AGI system with model manager, default model: %s", defaultModel)
 	}
 }
 
@@ -795,15 +856,7 @@ func isCommonWordContext(word string) bool {
 	return commonWords[word]
 }
 
-// SetAGIAgentBridge sets the AGI agent bridge for the context manager
-func (cm *ContextManager) SetAGIAgentBridge(bridge *AGIAgentBridge) {
-	cm.agiAgentBridge = bridge
-}
-
-// GetAGIAgentBridge returns the AGI agent bridge
-func (cm *ContextManager) GetAGIAgentBridge() *AGIAgentBridge {
-	return cm.agiAgentBridge
-}
+// AGI agent bridge functionality is now integrated into the AGI system directly
 
 // searchVectorDBForHistory searches the vector database for conversation history
 func (cm *ContextManager) searchVectorDBForHistory(ctx context.Context, limit int) []ActivityEvent {
@@ -820,8 +873,10 @@ func (cm *ContextManager) searchVectorDBForHistory(ctx context.Context, limit in
 		return events
 	}
 
-	// Create search query for conversation history
-	searchQuery := fmt.Sprintf("conversation %s history events messages", cm.conversationID)
+	// Create search query for conversation history - use persistent conversation ID
+	persistentID := cm.GetPersistentConversationID()
+	searchQuery := fmt.Sprintf("conversation %s history events messages node %s", 
+		persistentID, cm.nodeID)
 
 	// Try to generate embedding for the search query using the same model as RAG
 	var embedding []float32
@@ -885,18 +940,31 @@ func (cm *ContextManager) searchVectorDBForHistory(ctx context.Context, limit in
 	}
 
 	// Convert vector documents back to ActivityEvents
+	// persistentID already declared above
 	for i, result := range results {
 		if i >= limit {
 			break
 		}
 
-		// Check if this is a conversation document
-		if strings.Contains(result.ID, cm.conversationID) {
+		// Check if this is a conversation document - match against persistent conversation ID
+		isRelevant := strings.Contains(result.ID, persistentID) ||
+					  strings.Contains(result.Text, persistentID)
+					  
+		// Also check metadata for conversation_id match
+		if !isRelevant {
+			if convID, ok := result.Metadata["conversation_id"].(string); ok {
+				isRelevant = convID == persistentID
+			}
+		}
+		
+		if isRelevant {
 			// Parse metadata to reconstruct ActivityEvent
 			event := ActivityEvent{
 				Type:      "conversation_retrieval",
 				Content:   result.Text, // Use Text field instead of Content
-				Timestamp: time.Now(),  // Default timestamp - could be improved
+				Timestamp: time.Now(),  // Default timestamp - will be overridden if found in metadata
+				ConversationID: persistentID,
+				Success:   true,
 				Metadata: map[string]interface{}{
 					"retrieved_from": "vector_db",
 					"document_id":    result.ID,
@@ -908,9 +976,34 @@ func (cm *ContextManager) searchVectorDBForHistory(ctx context.Context, limit in
 			if eventType, ok := result.Metadata["event_type"].(string); ok {
 				event.Type = eventType
 			}
-			if timestamp, ok := result.Metadata["timestamp"].(string); ok {
-				if parsedTime, err := time.Parse(time.RFC3339, timestamp); err == nil {
-					event.Timestamp = parsedTime
+			if timestamp, ok := result.Metadata["timestamp"]; ok {
+				// Handle both string and numeric timestamps
+				switch ts := timestamp.(type) {
+				case string:
+					if parsedTime, err := time.Parse(time.RFC3339, ts); err == nil {
+						event.Timestamp = parsedTime
+					}
+				case float64:
+					event.Timestamp = time.Unix(int64(ts), 0)
+				case int64:
+					event.Timestamp = time.Unix(ts, 0)
+				}
+			}
+			
+			// Try to extract original event JSON if present
+			if strings.Contains(result.Text, `"JSON":`) {
+				// Extract JSON part for more accurate reconstruction
+				jsonStart := strings.Index(result.Text, `"JSON":`)
+				if jsonStart != -1 {
+					jsonPart := strings.TrimSpace(result.Text[jsonStart+7:])
+					var originalEvent ActivityEvent
+					if err := json.Unmarshal([]byte(jsonPart), &originalEvent); err == nil {
+						// Use original event data with some safety checks
+						event = originalEvent
+						event.ConversationID = persistentID // Ensure persistent conversation ID
+						event.Metadata["retrieved_from"] = "vector_db"
+						event.Metadata["document_id"] = result.ID
+					}
 				}
 			}
 

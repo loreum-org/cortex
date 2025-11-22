@@ -89,7 +89,7 @@ func TestNewSolverAgent(t *testing.T) {
 		require.NotNil(t, agent.modelManager)
 		require.NotNil(t, agent.config) // Should be initialized to &SolverConfig{}
 
-		// Auto-selected model should be valid (could be ollama-cogito, openai-gpt-3.5-turbo, or default)
+		// Auto-selected model should be valid (could be cogito, openai-gpt-3.5-turbo, or default)
 		assert.NotEmpty(t, agent.config.DefaultModel)
 
 		// Check if the selected model is registered
